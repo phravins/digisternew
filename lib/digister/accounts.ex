@@ -291,6 +291,21 @@ defmodule Digister.Accounts do
     :ok
   end
 
+  def list_user_sessions(user_id) do
+    import Ecto.Query
+    Repo.all(
+      from t in UserToken,
+        where: t.user_id == ^user_id and t.context == "session",
+        order_by: [desc: t.inserted_at]
+    )
+  end
+
+  def revoke_user_session(token_id) do
+    import Ecto.Query
+    Repo.delete_all(from t in UserToken, where: t.id == ^token_id)
+    :ok
+  end
+
   ## Token helper
 
   defp update_user_and_delete_all_tokens(changeset) do

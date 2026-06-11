@@ -25,6 +25,7 @@
     "paths": {
       "*": ["../deps/*"]
     },
+    "ignoreDeprecations": "5.0",
     "allowJs": true,
     "noEmit": true
   },
