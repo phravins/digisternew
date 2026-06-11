@@ -90,6 +90,25 @@ defmodule Digister.Accounts do
 
   def list_users, do: Repo.all(User)
 
+  def list_users_with_orgs do
+    Repo.all(
+      from u in User,
+        left_join: o in Digister.Organisations.Organisation, on: u.organisation_id == o.id,
+        order_by: [asc: u.inserted_at],
+        select: %{
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          role: u.role,
+          is_super_admin: u.is_super_admin,
+          is_active: u.is_active,
+          signed_on: u.signed_on,
+          inserted_at: u.inserted_at,
+          org_name: o.name
+        }
+    )
+  end
+
   ## Settings
 
   @doc """

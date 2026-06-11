@@ -85,6 +85,8 @@ defmodule DigisterWeb.Router do
     pipe_through [:browser, :super_admin_layout]
 
     live "/", DashboardLive, :index
+    live "/companies", CompaniesLive, :index
+    live "/users", UsersLive, :index
     live "/profile", ProfileLive, :index
     live "/settings", SettingsLive, :index
   end
