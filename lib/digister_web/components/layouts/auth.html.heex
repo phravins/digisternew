@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title default="Sign in" suffix=" · Digister" phx-no-format>{assigns[:page_title]}</.live_title>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}></script>
+  </head>
+  <body class="bg-white min-h-screen flex flex-col">
+
+    <%!-- Top-left brand text --%>
+    <header class="px-8 pt-6 flex-none">
+      <div class="flex items-center gap-2.5 select-none">
+        <div class="w-8 h-8 rounded-lg digister-logo-bg flex items-center justify-center flex-shrink-0">
+          <svg width="16" height="16" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="4" width="8" height="8" rx="1.5" fill="white" fill-opacity="0.9"/>
+            <rect x="16" y="4" width="8" height="8" rx="1.5" fill="white" fill-opacity="0.7"/>
+            <rect x="4" y="16" width="8" height="8" rx="1.5" fill="white" fill-opacity="0.7"/>
+            <rect x="16" y="16" width="8" height="8" rx="1.5" fill="white" fill-opacity="0.5"/>
+          </svg>
+        </div>
+        <div>
+          <p class="text-sm font-semibold text-gray-900 leading-tight">Digisters</p>
+          <p class="text-xs text-gray-400 leading-tight">for RealOffice</p>
+        </div>
+      </div>
+    </header>
+
+    <%!-- Centered form --%>
+    <main class="flex-1 flex items-center justify-center px-6 py-12">
+      {@inner_content}
+    </main>
+
+  </body>
+</html>
