@@ -9,12 +9,14 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(Digister.PubSub, "activities")
+
     total_users = Accounts.count_users()
     total_orgs = Organisations.count_organisations()
     total_registers = Registers.count_registers()
     total_entries = Registers.count_entries()
     orgs = Organisations.list_organisations_with_register_counts()
-    activity = Activities.list_recent(10)
+    activity = Activities.list_recent(20)
 
     {:ok,
      socket
@@ -26,6 +28,15 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
      |> assign(:total_entries, total_entries)
      |> assign(:orgs, orgs)
      |> assign(:activity, activity)}
+  end
+
+  def handle_info({:activity_logged, activity}, socket) do
+    updated = [activity | socket.assigns.activity] |> Enum.take(20)
+    {:noreply, assign(socket, :activity, updated)}
+  end
+
+  def handle_info(:activities_cleared, socket) do
+    {:noreply, assign(socket, :activity, [])}
   end
 
   def handle_event("clear_activity", _params, socket) do
@@ -66,8 +77,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             </svg>
           </div>
         </div>
-        <p class="text-4xl font-bold text-gray-900 mb-1">{@total_orgs}</p>
-        <p class="text-xs text-green-600 font-medium">Total across platform</p>
+        <p class="text-4xl font-bold text-gray-900">{@total_orgs}</p>
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -79,8 +89,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             </svg>
           </div>
         </div>
-        <p class="text-4xl font-bold text-gray-900 mb-1">{@total_users}</p>
-        <p class="text-xs text-green-600 font-medium">Registered users</p>
+        <p class="text-4xl font-bold text-gray-900">{@total_users}</p>
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -92,8 +101,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             </svg>
           </div>
         </div>
-        <p class="text-4xl font-bold text-gray-900 mb-1">{@total_registers}</p>
-        <p class="text-xs text-gray-400">Total across platform</p>
+        <p class="text-4xl font-bold text-gray-900">{@total_registers}</p>
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -105,8 +113,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             </svg>
           </div>
         </div>
-        <p class="text-4xl font-bold text-gray-900 mb-1">{@total_entries}</p>
-        <p class="text-xs text-green-600 font-medium">Live data</p>
+        <p class="text-4xl font-bold text-gray-900">{@total_entries}</p>
       </div>
 
     </div>
@@ -230,16 +237,10 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
         <div class="bg-white rounded-xl border border-gray-200">
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-900">Activity</h3>
-            <div class="flex items-center gap-1.5">
-              <button phx-click="clear_activity"
-                class="text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 hover:bg-red-50 rounded px-2.5 py-1 transition-colors">
-                Clear
-              </button>
-              <span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded px-2.5 py-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                Live
-              </span>
-            </div>
+            <button phx-click="clear_activity"
+              class="text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 hover:bg-red-50 rounded px-2.5 py-1 transition-colors">
+              Clear
+            </button>
           </div>
           <div class="px-5 py-4 space-y-5 min-h-[480px] max-h-[560px] overflow-y-auto">
             <%= if @activity == [] do %>

@@ -70,7 +70,8 @@ defmodule DigisterWeb.UserSessionController do
          {user, _inserted_at} when not is_nil(user) <- Accounts.get_user_by_session_token(raw) do
       user_params = if remember_me, do: %{"remember_me" => "true"}, else: %{}
 
-      Activities.log(%{user_name: user.email, action: "signed in to platform admin"})
+      actor = user.username || String.split(user.email, "@") |> List.first()
+      Activities.log(%{user_name: actor, action: "signed in to platform admin"})
       Accounts.update_signed_on(user)
       conn
       |> put_flash(:info, "Welcome back!")

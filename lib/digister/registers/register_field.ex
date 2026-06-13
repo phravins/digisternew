@@ -5,7 +5,7 @@ defmodule Digister.Registers.RegisterField do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
 
-  @field_types ~w(text number date select multi_select checkbox file user)
+  @field_types ~w(text long_text number decimal currency email reference_no url date datetime checkbox multi_select dropdown phone time file)
 
   schema "register_fields" do
     field :label, :string

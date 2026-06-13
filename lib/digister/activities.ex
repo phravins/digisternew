@@ -8,12 +8,17 @@ defmodule Digister.Activities do
   end
 
   def log(attrs) do
-    %Activity{}
-    |> Activity.changeset(attrs)
-    |> Repo.insert()
+    case %Activity{} |> Activity.changeset(attrs) |> Repo.insert() do
+      {:ok, activity} = ok ->
+        Phoenix.PubSub.broadcast(Digister.PubSub, "activities", {:activity_logged, activity})
+        ok
+      {:error, _} = err ->
+        err
+    end
   end
 
   def clear_all do
     Repo.delete_all(Activity)
+    Phoenix.PubSub.broadcast(Digister.PubSub, "activities", :activities_cleared)
   end
 end

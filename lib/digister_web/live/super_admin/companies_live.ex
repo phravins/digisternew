@@ -88,7 +88,9 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
     if errors == %{} do
       case Organisations.create_organisation(%{name: name, slug: slug, industry: industry, country: country}) do
         {:ok, org} ->
-          Activities.log(%{user_name: "Admin", action: "created company #{org.name}"})
+          user = socket.assigns.current_scope.user
+          actor = user.username || String.split(user.email, "@") |> List.first()
+          Activities.log(%{user_name: actor, action: "created company \"#{org.name}\""})
           orgs = Organisations.list_organisations()
           {:noreply,
            socket
