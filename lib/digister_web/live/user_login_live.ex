@@ -66,7 +66,7 @@ defmodule DigisterWeb.UserLoginLive do
             name="remember_me"
             id="remember_me"
             value="true"
-            class="w-4 h-4 rounded border-gray-300 text-sky-500 focus:ring-gray-900 cursor-pointer"
+            class="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
           />
           <label for="remember_me" class="text-sm text-gray-600 cursor-pointer select-none">
             Remember me
