@@ -214,6 +214,13 @@ defmodule Digister.Accounts do
     |> Repo.update()
   end
 
+  def delete_user(%User{} = user) do
+    Repo.transaction(fn ->
+      Repo.delete_all(from(t in UserToken, where: t.user_id == ^user.id))
+      Repo.delete!(user)
+    end)
+  end
+
   def update_signed_on(user) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
     Repo.update_all(from(u in User, where: u.id == ^user.id), set: [signed_on: now])

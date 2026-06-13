@@ -39,7 +39,7 @@ defmodule Digister.Accounts.User do
 
   def profile_changeset(user, attrs) do
     user
-    |> cast(attrs, [:username])
+    |> cast(attrs, [:username, :avatar, :avatar_content_type])
     |> validate_length(:username, max: 100)
   end
 

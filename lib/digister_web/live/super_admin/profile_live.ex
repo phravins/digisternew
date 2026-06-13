@@ -35,7 +35,35 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
      |> assign(:organisation, organisation)
      |> assign(:role_label, role_label)
      |> assign(:member_since, member_since)
-     |> assign(:form, %{"full_name" => user.username || ""})}
+     |> assign(:form, %{"full_name" => user.username || ""})
+     |> assign(:show_delete_modal, false)
+     |> allow_upload(:avatar,
+         accept: ~w(.jpg .jpeg .png .gif .webp),
+         max_entries: 1,
+         max_file_size: 5_000_000,
+         auto_upload: true)}
+  end
+
+  def handle_progress(:avatar, entry, socket) do
+    if entry.done? do
+      [{data, ct}] =
+        consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
+          {:ok, {File.read!(path), entry.client_type}}
+        end)
+
+      case Digister.Accounts.update_user_profile(socket.assigns.user, %{
+             avatar: data,
+             avatar_content_type: ct
+           }) do
+        {:ok, updated_user} ->
+          {:noreply, assign(socket, :user, updated_user)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to upload photo.")}
+      end
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("save", %{"full_name" => name}, socket) do
@@ -52,14 +80,65 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
     end
   end
 
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :avatar, ref)}
+  end
+
   def handle_event("discard", _params, socket) do
     {:noreply,
      socket
-     |> assign(:form, %{"full_name" => socket.assigns.user.username || ""})}
+     |> assign(:form, %{"full_name" => socket.assigns.user.username || ""})
+     |> put_flash(:info, "Changes discarded.")}
+  end
+
+  def handle_event("show_delete_modal", _params, socket) do
+    {:noreply, assign(socket, :show_delete_modal, true)}
+  end
+
+  def handle_event("hide_delete_modal", _params, socket) do
+    {:noreply, assign(socket, :show_delete_modal, false)}
+  end
+
+  def handle_event("delete_account", _params, socket) do
+    case Digister.Accounts.delete_user(socket.assigns.user) do
+      {:ok, _} ->
+        {:noreply, push_navigate(socket, to: ~p"/users/log-in")}
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> assign(:show_delete_modal, false)
+         |> put_flash(:error, "Failed to delete account. Please try again.")}
+    end
   end
 
   def render(assigns) do
     ~H"""
+    <%!-- Delete confirm modal --%>
+    <div
+      :if={@show_delete_modal}
+      class="fixed inset-0 z-50 pl-52"
+      phx-window-keydown="hide_delete_modal"
+      phx-key="Escape">
+      <div class="absolute inset-0 bg-black/40" phx-click="hide_delete_modal"></div>
+      <div class="relative z-10 h-full flex items-center justify-center px-4">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-sm p-5">
+          <h3 class="text-sm font-semibold text-gray-900 mb-1">Confirm Delete</h3>
+          <p class="text-sm text-gray-500 mb-5">Are you sure you want to delete your account? This cannot be undone.</p>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" phx-click="hide_delete_modal"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="button" phx-click="delete_account"
+              class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="max-w-3xl mx-auto">
 
       <.form for={%{}} phx-submit="save">
@@ -68,13 +147,24 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
         <div class="mb-10">
           <h2 class="text-xl font-bold text-gray-900 mb-6">Account Info</h2>
 
-          <%!-- Profile Display --%>
-          <div class="mb-8 w-full flex flex-col items-center gap-2">
+          <%!-- Avatar --%>
+          <div class="mb-8 w-full flex flex-col items-center gap-3">
             <div class="relative mb-1">
               <div class="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-                </svg>
+                <%= cond do %>
+                  <% @uploads.avatar.entries != [] -> %>
+                    <%!-- Live preview while uploading --%>
+                    <%= for entry <- @uploads.avatar.entries do %>
+                      <.live_img_preview entry={entry} class="w-20 h-20 object-cover" />
+                    <% end %>
+                  <% @user.avatar != nil -> %>
+                    <img src={"data:#{@user.avatar_content_type};base64,#{Base.encode64(@user.avatar)}"}
+                      class="w-20 h-20 object-cover" />
+                  <% true -> %>
+                    <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                    </svg>
+                <% end %>
               </div>
               <span class="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></span>
             </div>
@@ -84,6 +174,35 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
               <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
               {@role_label}
             </span>
+            <%!-- Change photo button --%>
+            <label for={@uploads.avatar.ref}
+              class="cursor-pointer flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:border-indigo-300 rounded-lg px-3 py-1.5 transition-colors bg-white">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Change photo
+            </label>
+            <.live_file_input upload={@uploads.avatar} class="hidden" />
+            <%!-- Upload status --%>
+            <%= for entry <- @uploads.avatar.entries do %>
+              <div class="flex items-center gap-2">
+                <%= if entry.done? do %>
+                  <p class="text-xs text-green-600 font-medium">Photo ready — click Save changes</p>
+                <% else %>
+                  <p class="text-xs text-gray-500">Uploading… {entry.progress}%</p>
+                <% end %>
+                <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref}
+                  class="text-gray-400 hover:text-red-500 transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+                <p class="text-xs text-red-500">{error_to_string(err)}</p>
+              <% end %>
+            <% end %>
           </div>
 
           <div class="grid grid-cols-2 gap-5">
@@ -133,7 +252,7 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
                 <p class="text-xs text-gray-500">Permanently delete your account and all associated data.</p>
               </div>
             </div>
-            <button type="button"
+            <button type="button" phx-click="show_delete_modal"
               class="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors">
               Delete Account
             </button>
@@ -156,4 +275,9 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
     </div>
     """
   end
+
+  defp error_to_string(:too_large), do: "File is too large (max 5MB)"
+  defp error_to_string(:not_accepted), do: "File type not accepted (use JPG, PNG, GIF, WEBP)"
+  defp error_to_string(:too_many_files), do: "Too many files"
+  defp error_to_string(_), do: "Upload error"
 end
