@@ -81,7 +81,7 @@ defmodule DigisterWeb.Router do
   end
 
   ## Super admin routes
-  scope "/super-admin", DigisterWeb.SuperAdmin do
+  scope "/digisters/superadmin", DigisterWeb.SuperAdmin do
     pipe_through [:browser, :super_admin_layout]
 
     live "/", DashboardLive, :index

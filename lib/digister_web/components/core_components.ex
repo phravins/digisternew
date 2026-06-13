@@ -66,21 +66,27 @@ defmodule DigisterWeb.CoreComponents do
       {@rest}
     >
       <div class={[
-        "flex items-center gap-3 rounded-xl px-4 py-3 text-white shadow-lg",
-        @kind == :info && "bg-green-500",
-        @kind == :error && "bg-red-500"
+        "flex items-center gap-3 rounded-xl px-4 py-3 shadow-md border",
+        @kind == :info && "bg-green-50 border-green-300 text-green-800",
+        @kind == :error && "bg-red-50 border-red-300 text-red-800"
       ]}>
-        <svg :if={@kind == :info} class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        <%!-- Success icon --%>
+        <svg :if={@kind == :info} class="w-5 h-5 flex-shrink-0 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <svg :if={@kind == :error} class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-          <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 5h2v6h-2V7zm0 8h2v2h-2v-2z" clip-rule="evenodd" />
+        <%!-- Error icon --%>
+        <svg :if={@kind == :error} class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p class="flex-1 text-sm font-medium">{msg}</p>
         <button
           type="button"
           phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
-          class="flex-shrink-0 text-white/70 hover:text-white transition-colors"
+          class={[
+            "flex-shrink-0 transition-colors",
+            @kind == :info && "text-green-400 hover:text-green-600",
+            @kind == :error && "text-red-400 hover:text-red-600"
+          ]}
           aria-label={gettext("close")}
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">

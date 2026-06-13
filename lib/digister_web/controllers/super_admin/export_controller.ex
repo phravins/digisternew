@@ -76,6 +76,9 @@ defmodule DigisterWeb.SuperAdmin.ExportController do
   defp fmt_date(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y")
   defp fmt_date(_), do: ""
 
-  defp fmt_dt(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y %I:%M %p")
+  defp fmt_dt(%NaiveDateTime{} = dt) do
+    ist = NaiveDateTime.add(dt, 19800, :second)
+    Calendar.strftime(ist, "%d %b %Y %I:%M %p")
+  end
   defp fmt_dt(_), do: ""
 end

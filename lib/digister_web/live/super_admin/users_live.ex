@@ -51,7 +51,10 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
     |> String.upcase()
   end
 
-  defp fmt_dt(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y · %I:%M %p")
+  defp fmt_dt(%NaiveDateTime{} = dt) do
+    ist = NaiveDateTime.add(dt, 19800, :second)
+    Calendar.strftime(ist, "%d %b %Y · %I:%M %p")
+  end
   defp fmt_dt(_), do: "Never"
 
   def render(assigns) do
@@ -82,7 +85,7 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
           </svg>
           Create Account
         </button>
-        <a href="/super-admin/users/export"
+        <a href="/digisters/superadmin/users/export"
           class="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
