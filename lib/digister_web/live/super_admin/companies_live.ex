@@ -25,7 +25,6 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
      |> assign(:search, "")
      |> assign(:filter, "all")
      |> assign(:show_modal, false)
-     |> assign(:modal_step, 1)
      |> assign(:form_errors, %{})
      |> assign(:industries, @industries)
      |> assign(:countries, @countries)
@@ -58,7 +57,6 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
     {:noreply,
      socket
      |> assign(:show_modal, true)
-     |> assign(:modal_step, 1)
      |> assign(:form_errors, %{})
      |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
   end
@@ -81,52 +79,28 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
     {:noreply, socket |> assign(:form_data, form_data) |> assign(:form_errors, errors)}
   end
 
-  def handle_event("next_step", %{"name" => name, "slug" => slug, "industry" => industry, "country" => country}, socket) do
+  def handle_event("create_company", %{"name" => name, "slug" => slug, "industry" => industry, "country" => country}, socket) do
     errors =
       %{}
       |> then(fn e -> if String.trim(name) == "", do: Map.put(e, :name, "Company name is required."), else: e end)
       |> then(fn e -> if String.trim(slug) == "", do: Map.put(e, :slug, "Workspace link is required."), else: e end)
 
     if errors == %{} do
-      {:noreply,
-       socket
-       |> assign(:modal_step, 2)
-       |> assign(:form_errors, %{})
-       |> assign(:form_data, %{"name" => name, "slug" => slug, "industry" => industry, "country" => country})}
+      case Organisations.create_organisation(%{name: name, slug: slug, industry: industry, country: country}) do
+        {:ok, org} ->
+          Activities.log(%{user_name: "Admin", action: "created company #{org.name}"})
+          orgs = Organisations.list_organisations()
+          {:noreply,
+           socket
+           |> assign(:orgs, orgs)
+           |> assign(:all_orgs, orgs)
+           |> assign(:show_modal, false)
+           |> put_flash(:info, "Company created successfully.")}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to create company. Check the link is unique.")}
+      end
     else
       {:noreply, assign(socket, :form_errors, errors)}
-    end
-  end
-
-  def handle_event("create_company", %{"admin_first_name" => first, "admin_last_name" => last, "admin_email" => admin_email} = params, socket) do
-    data = socket.assigns.form_data
-    admin_name = String.trim("#{first} #{last}")
-    admin_phone = Map.get(params, "admin_phone", "")
-    cond do
-      String.trim(admin_email) == "" ->
-        {:noreply, assign(socket, :form_errors, %{email: "Admin email is required."})}
-      true ->
-        case Organisations.create_organisation(%{
-          name: data["name"],
-          slug: data["slug"],
-          industry: data["industry"],
-          country: data["country"],
-          owner: admin_name,
-          owner_email: admin_email,
-          owner_phone: admin_phone
-        }) do
-          {:ok, org} ->
-            Activities.log(%{user_name: "Admin", action: "created company #{org.name}"})
-            orgs = Organisations.list_organisations()
-            {:noreply,
-             socket
-             |> assign(:orgs, orgs)
-             |> assign(:all_orgs, orgs)
-             |> assign(:show_modal, false)
-             |> put_flash(:info, "Company created successfully.")}
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Failed to create company. Check the link is unique.")}
-        end
     end
   end
 
@@ -261,11 +235,10 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
         <div class="absolute inset-0 bg-black/20" phx-click="close_modal"></div>
         <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md mx-4 p-8">
 
-          <%!-- Step 1 — Company Details --%>
-          <div :if={@modal_step == 1}>
+          <div>
             <h2 class="text-xl font-bold text-gray-900">Create Company</h2>
             <p class="text-sm text-gray-500 mt-1 mb-6">Set up the company workspace details.</p>
-            <form phx-submit="next_step" class="space-y-5">
+            <form phx-submit="create_company" class="space-y-5">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                   Company Name <span class="text-red-500">*</span>
@@ -315,63 +288,6 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
                     <option value="">Select country</option>
                     <option :for={c <- @countries} value={c} selected={@form_data["country"] == c}>{c}</option>
                   </select>
-                </div>
-              </div>
-
-              <div class="flex gap-3 pt-2">
-                <button type="button" phx-click="close_modal"
-                  class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="submit"
-                  class="flex-1 bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium text-white">
-                  Create
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <%!-- Step 2 — Admin Account --%>
-          <div :if={@modal_step == 2}>
-            <h2 class="text-xl font-bold text-gray-900">Admin Account</h2>
-            <p class="text-sm text-gray-500 mt-1 mb-6">Who will manage this company workspace?</p>
-            <form phx-submit="create_company" class="space-y-5">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
-                  <input type="text" name="admin_first_name" placeholder="First name"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400" />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
-                  <input type="text" name="admin_last_name" placeholder="Last name"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400" />
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                  Email <span class="text-red-500">*</span>
-                </label>
-                <input type="email" name="admin_email" placeholder="admin@company.com"
-                  class={[
-                    "w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent",
-                    if(@form_errors[:email], do: "border-red-400 focus:ring-red-300", else: "border-gray-300 focus:ring-gray-400")
-                  ]} />
-                <p :if={@form_errors[:email]} class="mt-1.5 text-xs text-red-500">{@form_errors[:email]}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                  Phone Number
-                  <span class="ml-1 text-xs text-gray-400 font-normal">(optional)</span>
-                </label>
-                <div class="flex items-stretch border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-gray-400">
-                  <select class="px-3 py-2.5 bg-gray-50 text-sm text-gray-600 border-r border-gray-300 focus:outline-none">
-                    <option>+91</option><option>+1</option><option>+44</option><option>+61</option><option>+971</option>
-                  </select>
-                  <input type="tel" name="admin_phone" placeholder="98765 43210"
-                    class="flex-1 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white" />
                 </div>
               </div>
 
