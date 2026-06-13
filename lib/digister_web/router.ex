@@ -92,6 +92,8 @@ defmodule DigisterWeb.Router do
     live "/registers", RegistersLive, :index
     live "/registers/new", CreateRegisterLive, :new
     live "/registers/:org_id", RegistersLive, :show
+    live "/templates", TemplatesLive, :index
+    live "/bin", BinLive, :index
 
     get "/companies/export", ExportController, :companies
     get "/users/export", ExportController, :users

@@ -128,6 +128,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
     name = String.trim(params["name"] || "")
     desc = params["description"] || ""
     org_id = params["organisation_id"] || ""
+    is_template = params["is_template"] == "true"
 
     errors =
       %{}
@@ -137,7 +138,8 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
       attrs = %{
         name: name,
         description: if(String.trim(desc) == "", do: nil, else: String.trim(desc)),
-        organisation_id: if(String.trim(org_id) == "", do: nil, else: org_id)
+        organisation_id: if(is_template || String.trim(org_id) == "", do: nil, else: org_id),
+        is_template: is_template
       }
 
       case Registers.create_register(attrs) do
@@ -168,12 +170,21 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
 
           user = socket.assigns.current_scope.user
           actor = user.username || String.split(user.email, "@") |> List.first()
-          Activities.log(%{user_name: actor, action: "created register \"#{name}\""})
+          action = if is_template, do: "created template \"#{name}\"", else: "created register \"#{name}\""
+          Activities.log(%{user_name: actor, action: action})
+
+          redirect_to = if is_template,
+            do: ~p"/digisters/superadmin/templates",
+            else: ~p"/digisters/superadmin/registers"
+
+          msg = if is_template,
+            do: "Template \"#{name}\" saved successfully.",
+            else: "Register \"#{name}\" created successfully."
 
           {:noreply,
            socket
-           |> put_flash(:info, "Register \"#{name}\" created successfully.")
-           |> push_navigate(to: ~p"/digisters/superadmin/registers")}
+           |> put_flash(:info, msg)
+           |> push_navigate(to: redirect_to)}
 
         {:error, changeset} ->
           db_errors =
@@ -389,16 +400,27 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
           </div>
         </div>
-        <%= if @orgs != [] do %>
-          <div class="mt-3">
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
-            <select name="organisation_id"
-              class="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition max-w-xs">
-              <option value="">Select company (optional)</option>
-              <option :for={org <- @orgs} value={org.id}>{org.name}</option>
-            </select>
+        <div class="mt-3 flex items-start gap-8">
+          <%= if @orgs != [] do %>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
+              <select name="organisation_id"
+                class="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition max-w-xs">
+                <option value="">Select company (optional)</option>
+                <option :for={org <- @orgs} value={org.id}>{org.name}</option>
+              </select>
+            </div>
+          <% end %>
+          <div class="flex flex-col justify-end pb-0.5">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Save as Template</label>
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" name="is_template" value="true"
+                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span class="text-sm text-gray-600">Mark as reusable template</span>
+              <span class="text-xs text-gray-400">(no company required)</span>
+            </label>
           </div>
-        <% end %>
+        </div>
       </div>
 
       <%!-- Fields builder: left panel + right panel --%>

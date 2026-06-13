@@ -12,9 +12,7 @@ defmodule Digister.Application do
       Digister.Repo,
       {DNSCluster, query: Application.get_env(:digister, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Digister.PubSub},
-      # Start a worker by calling: Digister.Worker.start_link(arg)
-      # {Digister.Worker, arg},
-      # Start to serve requests, typically the last entry
+      Digister.BinCleaner,
       DigisterWeb.Endpoint
     ]
 

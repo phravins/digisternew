@@ -10,6 +10,7 @@ defmodule Digister.Registers.Register do
     field :description, :string
     field :category, :string
     field :is_active, :boolean, default: true
+    field :is_template, :boolean, default: false
     field :entries_count, :integer, default: 0
     field :deleted_at, :naive_datetime
 
@@ -28,8 +29,8 @@ defmodule Digister.Registers.Register do
 
   def changeset(register, attrs) do
     register
-    |> cast(attrs, [:name, :description, :category, :is_active, :organisation_id, :assigned_user_id])
-    |> validate_required([:name, :organisation_id])
+    |> cast(attrs, [:name, :description, :category, :is_active, :is_template, :organisation_id, :assigned_user_id])
+    |> validate_required([:name])
     |> validate_length(:name, max: 255)
   end
 end
