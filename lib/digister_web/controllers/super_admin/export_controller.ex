@@ -10,47 +10,47 @@ defmodule DigisterWeb.SuperAdmin.ExportController do
   def companies(conn, _params) do
     orgs = Organisations.list_organisations()
 
-    rows =
-      [["S.No", "Name", "Slug", "Industry", "Country", "Owner", "Owner Email", "Status", "Created"]] ++
-        Enum.with_index(orgs, 1)
-        |> Enum.map(fn {org, idx} ->
-          [
-            idx,
-            org.name,
-            org.slug,
-            org.industry || "",
-            org.country || "",
-            org.owner || "",
-            org.owner_email || "",
-            if(org.is_active, do: "Active", else: "Inactive"),
-            fmt_date(org.inserted_at)
-          ]
-        end)
+    header = ["S.No", "Name", "Slug", "Industry", "Country", "Owner", "Owner Email", "Status", "Created"]
 
-    csv = to_csv(rows)
-    send_csv(conn, csv, "companies_#{Date.utc_today()}.csv")
+    data =
+      Enum.with_index(orgs, 1)
+      |> Enum.map(fn {org, idx} ->
+        [
+          idx,
+          org.name,
+          org.slug,
+          org.industry || "",
+          org.country || "",
+          org.owner || "",
+          org.owner_email || "",
+          if(org.is_active, do: "Active", else: "Inactive"),
+          fmt_date(org.inserted_at)
+        ]
+      end)
+
+    send_csv(conn, to_csv([header | data]), "companies_#{Date.utc_today()}.csv")
   end
 
   def users(conn, _params) do
     users = Accounts.list_users_with_orgs()
 
-    rows =
-      [["S.No", "Name", "Email", "Company", "Role", "Status", "Last Active"]] ++
-        Enum.with_index(users, 1)
-        |> Enum.map(fn {u, idx} ->
-          [
-            idx,
-            u.username || "",
-            u.email,
-            u.org_name || "",
-            u.role || "",
-            if(u.is_active, do: "Active", else: "Inactive"),
-            fmt_dt(u.signed_on)
-          ]
-        end)
+    header = ["S.No", "Name", "Email", "Company", "Role", "Status", "Last Active"]
 
-    csv = to_csv(rows)
-    send_csv(conn, csv, "users_#{Date.utc_today()}.csv")
+    data =
+      Enum.with_index(users, 1)
+      |> Enum.map(fn {u, idx} ->
+        [
+          idx,
+          u.username || "",
+          u.email,
+          u.org_name || "",
+          u.role || "",
+          if(u.is_active, do: "Active", else: "Inactive"),
+          fmt_dt(u.signed_on)
+        ]
+      end)
+
+    send_csv(conn, to_csv([header | data]), "users_#{Date.utc_today()}.csv")
   end
 
   defp to_csv(rows) do
