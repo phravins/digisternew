@@ -40,10 +40,17 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
   end
 
   def handle_event("save", %{"full_name" => name}, socket) do
-    {:noreply,
-     socket
-     |> assign(:saved, true)
-     |> assign(:form, %{"full_name" => name})}
+    case Digister.Accounts.update_user_profile(socket.assigns.user, %{username: name}) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:user, updated_user)
+         |> assign(:saved, true)
+         |> assign(:form, %{"full_name" => updated_user.username || ""})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to save profile.")}
+    end
   end
 
   def handle_event("discard", _params, socket) do

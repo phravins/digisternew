@@ -38,6 +38,12 @@ defmodule Digister.Accounts.User do
     |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
 
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username])
+    |> validate_length(:username, max: 100)
+  end
+
   def email_changeset(user, attrs, opts \\ []) do
     user
     |> cast(attrs, [:email])

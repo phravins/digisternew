@@ -196,6 +196,12 @@ defmodule Digister.Accounts do
     |> update_user_and_delete_all_tokens()
   end
 
+  def update_user_profile(user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """
