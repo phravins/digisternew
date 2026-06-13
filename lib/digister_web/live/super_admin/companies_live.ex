@@ -37,8 +37,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
       socket.assigns.all_orgs
       |> Enum.filter(fn org ->
         String.contains?(String.downcase(org.name || ""), q) or
-        String.contains?(String.downcase(org.industry || ""), q) or
-        String.contains?(String.downcase(org.owner || ""), q)
+        String.contains?(String.downcase(org.industry || ""), q)
       end)
     {:noreply, socket |> assign(:search, q) |> assign(:orgs, filtered)}
   end
@@ -133,7 +132,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input type="text" placeholder="Search by name, industry, or admin..."
+          <input type="text" placeholder="Search by name or industry..."
             phx-keyup="search" phx-value-q="" name="q"
             value={@search}
             class="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white" />

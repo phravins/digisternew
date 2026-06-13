@@ -8,12 +8,9 @@ defmodule Digister.Organisations.Organisation do
   schema "organisations" do
     field :name, :string
     field :slug, :string
-    field :owner_email, :string
     field :is_active, :boolean, default: true
     field :industry, :string
     field :country, :string
-    field :owner, :string
-    field :owner_phone, :string
     field :registers_count, :integer, default: 0
     field :entries_count, :integer, default: 0
     field :initials, :string
@@ -27,8 +24,8 @@ defmodule Digister.Organisations.Organisation do
 
   def changeset(org, attrs) do
     org
-    |> cast(attrs, [:name, :slug, :owner_email, :is_active, :industry, :country,
-                    :owner, :owner_phone, :initials, :entries_feed_cleared_at])
+    |> cast(attrs, [:name, :slug, :is_active, :industry, :country,
+                    :initials, :entries_feed_cleared_at])
     |> validate_required([:name, :slug])
     |> validate_length(:name, max: 255)
     |> validate_length(:slug, max: 100)

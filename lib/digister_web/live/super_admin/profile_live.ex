@@ -37,10 +37,15 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
      |> assign(:member_since, member_since)
      |> assign(:form, %{"full_name" => user.username || ""})
      |> assign(:show_delete_modal, false)
+     |> assign(:show_avatar_modal, false)
      |> allow_upload(:avatar,
          accept: ~w(.jpg .jpeg .png .gif .webp),
          max_entries: 1,
          max_file_size: 5_000_000)}
+  end
+
+  def handle_event("validate", _params, socket) do
+    {:noreply, socket}
   end
 
   def handle_event("save", %{"full_name" => name}, socket) do
@@ -79,6 +84,14 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
      |> put_flash(:info, "Changes discarded.")}
   end
 
+  def handle_event("show_avatar_modal", _params, socket) do
+    {:noreply, assign(socket, :show_avatar_modal, true)}
+  end
+
+  def handle_event("hide_avatar_modal", _params, socket) do
+    {:noreply, assign(socket, :show_avatar_modal, false)}
+  end
+
   def handle_event("show_delete_modal", _params, socket) do
     {:noreply, assign(socket, :show_delete_modal, true)}
   end
@@ -102,6 +115,27 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
 
   def render(assigns) do
     ~H"""
+    <%!-- Avatar preview modal --%>
+    <div
+      :if={@show_avatar_modal && @user.avatar != nil}
+      class="fixed inset-0 z-50"
+      phx-window-keydown="hide_avatar_modal"
+      phx-key="Escape">
+      <div class="absolute inset-0 bg-black/70" phx-click="hide_avatar_modal"></div>
+      <div class="relative z-10 h-full flex items-center justify-center px-4">
+        <div class="relative">
+          <button type="button" phx-click="hide_avatar_modal"
+            class="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg text-gray-600 hover:text-gray-900 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img src={"data:#{@user.avatar_content_type};base64,#{Base.encode64(@user.avatar)}"}
+            class="max-w-[80vw] max-h-[80vh] rounded-xl shadow-2xl object-contain bg-white" />
+        </div>
+      </div>
+    </div>
+
     <%!-- Delete confirm modal --%>
     <div
       :if={@show_delete_modal}
@@ -129,7 +163,7 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
 
     <div class="max-w-3xl mx-auto">
 
-      <.form for={%{}} phx-submit="save">
+      <.form for={%{}} phx-submit="save" phx-change="validate">
 
         <%!-- Account Info --%>
         <div class="mb-10">
@@ -147,7 +181,9 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
                     <% end %>
                   <% @user.avatar != nil -> %>
                     <img src={"data:#{@user.avatar_content_type};base64,#{Base.encode64(@user.avatar)}"}
-                      class="w-20 h-20 object-cover" />
+                      phx-click="show_avatar_modal"
+                      title="Click to view photo"
+                      class="w-20 h-20 object-cover cursor-pointer" />
                   <% true -> %>
                     <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>

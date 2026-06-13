@@ -57,9 +57,7 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
         Enum.filter(socket.assigns.all_orgs, fn org ->
           String.contains?(String.downcase(org.name || ""), q) or
             String.contains?(String.downcase(org.slug || ""), q) or
-            String.contains?(String.downcase(org.industry || ""), q) or
-            String.contains?(String.downcase(org.owner || ""), q) or
-            String.contains?(String.downcase(org.owner_email || ""), q)
+            String.contains?(String.downcase(org.industry || ""), q)
         end)
       else
         Enum.filter(socket.assigns.all_registers, fn r ->
@@ -110,7 +108,6 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
               <tr class="border-b border-gray-100">
                 <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Company</th>
                 <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Industry</th>
-                <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Owner</th>
                 <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                 <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Created</th>
                 <th class="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Regs</th>
@@ -120,7 +117,7 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
             <tbody class="divide-y divide-gray-100">
               <%= if @orgs == [] do %>
                 <tr>
-                  <td colspan="7" class="px-6 py-16 text-center">
+                  <td colspan="6" class="px-6 py-16 text-center">
                     <div class="flex flex-col items-center gap-3">
                       <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
@@ -146,10 +143,6 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
                     </div>
                   </td>
                   <td class="px-5 py-4 text-sm text-gray-600">{org.industry || "—"}</td>
-                  <td class="px-5 py-4">
-                    <p class="text-sm font-medium text-gray-900">{org.owner || "—"}</p>
-                    <p :if={org.owner_email} class="text-xs text-gray-400 mt-0.5">{org.owner_email}</p>
-                  </td>
                   <td class="px-5 py-4">
                     <span class={[
                       "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",

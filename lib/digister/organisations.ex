@@ -19,8 +19,6 @@ defmodule Digister.Organisations do
           name: o.name,
           slug: o.slug,
           industry: o.industry,
-          owner: o.owner,
-          owner_email: o.owner_email,
           is_active: o.is_active,
           entries_count: o.entries_count,
           inserted_at: o.inserted_at,
