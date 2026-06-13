@@ -10,7 +10,7 @@ defmodule DigisterWeb.SuperAdminAuth do
   def require_super_admin(conn, _opts) do
     user = conn.assigns[:current_scope] && conn.assigns.current_scope.user
 
-    if user && user.is_super_admin do
+    if user && user.role == "super_admin" do
       conn
     else
       conn
@@ -24,7 +24,7 @@ defmodule DigisterWeb.SuperAdminAuth do
     socket = mount_current_user(socket, session)
     user = socket.assigns[:current_scope] && socket.assigns.current_scope.user
 
-    if user && user.is_super_admin do
+    if user && user.role == "super_admin" do
       {:cont, socket}
     else
       socket =

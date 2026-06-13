@@ -71,6 +71,25 @@ startClock()
 // Re-run after LiveView navigations that re-mount the layout
 window.addEventListener("phx:page-loading-stop", startClock)
 
+// Auto-dismiss toast notifications after 4 seconds
+function autoDismissFlash() {
+  document.querySelectorAll('[role="alert"]:not([data-permanent])').forEach(el => {
+    if (el.dataset.autoDismiss) return
+    el.dataset.autoDismiss = "true"
+    setTimeout(() => {
+      el.style.transition = "opacity 0.4s ease, transform 0.4s ease"
+      el.style.opacity = "0"
+      el.style.transform = "translateX(20px)"
+      setTimeout(() => el.remove(), 400)
+    }, 4000)
+  })
+}
+
+autoDismissFlash()
+window.addEventListener("phx:page-loading-stop", autoDismissFlash)
+// Also catch flash added mid-page without navigation (e.g. form saves)
+window.addEventListener("phx:update", autoDismissFlash)
+
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session

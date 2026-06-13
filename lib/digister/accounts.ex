@@ -100,7 +100,6 @@ defmodule Digister.Accounts do
           username: u.username,
           email: u.email,
           role: u.role,
-          is_super_admin: u.is_super_admin,
           is_active: u.is_active,
           signed_on: u.signed_on,
           inserted_at: u.inserted_at,

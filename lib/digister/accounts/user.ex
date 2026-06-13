@@ -12,7 +12,6 @@ defmodule Digister.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
-    field :is_super_admin, :boolean, default: false
     field :role, :string, default: "member"
     field :is_active, :boolean, default: true
     field :signed_on, :naive_datetime
@@ -29,12 +28,12 @@ defmodule Digister.Accounts.User do
 
   def super_admin_changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :password, :is_super_admin])
+    |> cast(attrs, [:email, :password])
     |> validate_email([])
     |> validate_required([:password])
     |> validate_length(:password, max: 72)
     |> maybe_hash_password([])
-    |> put_change(:is_super_admin, true)
+    |> put_change(:role, "super_admin")
     |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
 

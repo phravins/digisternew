@@ -195,7 +195,7 @@ defmodule DigisterWeb.UserAuth do
     end
   end
 
-  defp signed_in_path(%Digister.Accounts.User{is_super_admin: true}), do: ~p"/super-admin"
+  defp signed_in_path(%Digister.Accounts.User{role: "super_admin"}), do: ~p"/super-admin"
   defp signed_in_path(_user), do: ~p"/"
 
   @doc """

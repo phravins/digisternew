@@ -15,7 +15,7 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
 
     role_label =
       cond do
-        user.is_super_admin -> "Super admin"
+        user.role == "super_admin" -> "Super admin"
         user.role == "admin" -> "Admin"
         true -> user.role || "Member"
       end
@@ -35,7 +35,6 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
      |> assign(:organisation, organisation)
      |> assign(:role_label, role_label)
      |> assign(:member_since, member_since)
-     |> assign(:saved, false)
      |> assign(:form, %{"full_name" => user.username || ""})}
   end
 
@@ -45,8 +44,8 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
         {:noreply,
          socket
          |> assign(:user, updated_user)
-         |> assign(:saved, true)
-         |> assign(:form, %{"full_name" => updated_user.username || ""})}
+         |> assign(:form, %{"full_name" => updated_user.username || ""})
+         |> put_flash(:info, "Profile saved successfully.")}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to save profile.")}
@@ -56,17 +55,12 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
   def handle_event("discard", _params, socket) do
     {:noreply,
      socket
-     |> assign(:saved, false)
      |> assign(:form, %{"full_name" => socket.assigns.user.username || ""})}
   end
 
   def render(assigns) do
     ~H"""
     <div class="max-w-3xl mx-auto">
-
-      <div :if={@saved} class="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-        Profile saved successfully.
-      </div>
 
       <.form for={%{}} phx-submit="save">
 
