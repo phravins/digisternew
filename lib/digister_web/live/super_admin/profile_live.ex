@@ -44,7 +44,14 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
          max_file_size: 5_000_000)}
   end
 
-  def handle_event("validate", _params, socket) do
+  def handle_event("validate", params, socket) do
+    socket =
+      if match?(["avatar" | _], params["_target"]) and socket.assigns.uploads.avatar.entries != [] do
+        put_flash(socket, :info, "Photo selected — click Save changes to apply.")
+      else
+        socket
+      end
+
     {:noreply, socket}
   end
 
@@ -208,17 +215,8 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
               Change photo
             </label>
             <.live_file_input upload={@uploads.avatar} class="hidden" />
-            <%!-- Upload status --%>
+            <%!-- Upload errors --%>
             <%= for entry <- @uploads.avatar.entries do %>
-              <div class="flex items-center gap-2">
-                <p class="text-xs text-green-600 font-medium">Photo selected — click Save changes</p>
-                <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref}
-                  class="text-gray-400 hover:text-red-500 transition-colors">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
               <%= for err <- upload_errors(@uploads.avatar, entry) do %>
                 <p class="text-xs text-red-500">{error_to_string(err)}</p>
               <% end %>

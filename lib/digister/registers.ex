@@ -152,4 +152,14 @@ defmodule Digister.Registers do
     |> Ecto.Changeset.change(deleted_at: NaiveDateTime.utc_now())
     |> Repo.update()
   end
+
+  # File uploads
+
+  def list_file_uploads(register_id) do
+    Repo.all(
+      from u in RegisterFileUpload,
+        where: u.register_id == ^register_id,
+        select: %{entry_id: u.entry_id, field_key: u.field_key, original_name: u.original_name}
+    )
+  end
 end
