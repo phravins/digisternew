@@ -65,9 +65,12 @@ defmodule DigisterWeb.SuperAdmin.BinLive do
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class={[
+      "bg-white rounded-xl border border-gray-200 overflow-hidden",
+      @registers == [] && "flex-1 flex flex-col"
+    ]}>
       <%= if @registers == [] do %>
-        <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="flex flex-1 flex-col items-center justify-center py-16 text-center">
           <svg class="w-12 h-12 text-gray-200 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>

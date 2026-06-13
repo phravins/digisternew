@@ -120,7 +120,8 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
   def render(assigns) do
     ~H"""
     <div>
-      <%= if @view == :companies do %>
+      <%= cond do %>
+        <% @view == :companies -> %>
         <%!-- ── Company folder view ── --%>
         <div class="flex items-center justify-between mb-6">
           <h1 class="text-2xl font-bold text-gray-900">Registers</h1>
@@ -204,7 +205,7 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
           </div>
         <% end %>
 
-      <% else %>
+        <% @view == :registers -> %>
         <%!-- ── Register drill-down view ── --%>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-2 text-sm">
@@ -265,7 +266,8 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
           </div>
         <% else %>
           <div class="space-y-3">
-            <div :for={reg <- @registers}
+            <a :for={reg <- @registers}
+              href={~p"/digisters/superadmin/registers/#{@selected_org.id}/r/#{reg.id}"}
               class="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-5 py-4 hover:border-gray-300 hover:shadow-sm transition-all">
               <%!-- Name + entries --%>
               <div class="min-w-0">
@@ -283,11 +285,141 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
               ]}>
                 {if reg.is_active, do: "Active", else: "Inactive"}
               </span>
-            </div>
+            </a>
           </div>
         <% end %>
+
+        <% true -> %>
+        <%!-- ── Register entries (read-only) view ── --%>
+        <div class="flex items-center justify-between mb-6">
+          <a href={~p"/digisters/superadmin/registers/#{@selected_org.id}"}
+            class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Registers
+          </a>
+        </div>
+
+        <%!-- Register header card --%>
+        <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 mb-6">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg font-bold text-gray-900">{@register.name}</h2>
+                <span class={[
+                  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                  if(@register.is_active,
+                    do: "bg-green-50 border-green-200 text-green-700",
+                    else: "bg-gray-50 border-gray-200 text-gray-500")
+                ]}>
+                  {if @register.is_active, do: "Published", else: "Draft"}
+                </span>
+              </div>
+              <p class="text-sm text-gray-400 mt-0.5">{@register.description || "No description"}</p>
+              <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                <span>{length(@fields)} {if length(@fields) == 1, do: "field", else: "fields"}</span>
+                <span>{length(@all_entries)} {if length(@all_entries) == 1, do: "entry", else: "entries"}</span>
+                <span>Updated {fmt_date(@register.updated_at)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Entries table (read-only) --%>
+        <div class="flex items-center justify-between mb-4">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Search entries..."
+              phx-keyup="search" name="q" value={@search}
+              class="border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white w-72" />
+          </div>
+          <span class="text-xs text-gray-400">{length(@entries)} {if length(@entries) == 1, do: "entry", else: "entries"}</span>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-100">
+                <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">S No</th>
+                <th :for={field <- @fields} class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{field.label}</th>
+                <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Added by</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <%= if @entries == [] do %>
+                <tr>
+                  <td colspan={length(@fields) + 2} class="px-6 py-16 text-center">
+                    <p class="text-sm font-medium text-gray-700">No entries yet</p>
+                    <p class="text-xs text-gray-400 mt-0.5">This register has no entries.</p>
+                  </td>
+                </tr>
+              <% else %>
+                <tr :for={{entry, idx} <- Enum.with_index(@entries, 1)} class="hover:bg-gray-50/60 transition-colors">
+                  <td class="px-5 py-4 text-sm text-gray-400">{idx}</td>
+                  <td :for={field <- @fields} class="px-5 py-4 text-sm text-gray-700 whitespace-nowrap">
+                    {render_cell(assigns, entry, field)}
+                  </td>
+                  <td class="px-5 py-4">
+                    <div class="flex items-center gap-2">
+                      <span class="w-7 h-7 rounded-full bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                        {entry.added_by_name |> to_string() |> String.first() |> to_string() |> String.upcase()}
+                      </span>
+                      <span class="text-sm text-gray-700">{entry.added_by_name}</span>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
       <% end %>
     </div>
+    """
+  end
+
+  # Renders a single read-only entry cell based on the field type.
+  defp render_cell(assigns, entry, field) do
+    value = Map.get(entry.data || %{}, field.field_key)
+
+    assigns =
+      assign(assigns, :value, value)
+      |> assign(:field, field)
+      |> assign(:filename, Map.get(assigns.file_index, {entry.id, field.field_key}))
+
+    ~H"""
+    <%= cond do %>
+      <% @field.field_type == "file" and @filename not in [nil, ""] -> %>
+        <span class="inline-flex items-center gap-1.5 text-indigo-600">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+          {@filename}
+        </span>
+      <% @field.field_type == "url" and @value not in [nil, ""] -> %>
+        <a href={@value} target="_blank" rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 text-indigo-600 hover:underline">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          {@value}
+        </a>
+      <% @field.field_type == "email" and @value not in [nil, ""] -> %>
+        <a href={"mailto:#{@value}"} class="text-indigo-600 hover:underline">{@value}</a>
+      <% is_list(@value) -> %>
+        {Enum.join(@value, ", ")}
+      <% @value in [nil, ""] -> %>
+        <span class="text-gray-300">—</span>
+      <% true -> %>
+        {to_string(@value)}
+    <% end %>
     """
   end
 end

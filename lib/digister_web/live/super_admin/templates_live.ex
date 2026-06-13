@@ -111,9 +111,12 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class={[
+      "bg-white rounded-xl border border-gray-200 overflow-hidden",
+      @templates == [] && "flex-1 flex flex-col"
+    ]}>
       <%= if @templates == [] do %>
-        <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="flex flex-1 flex-col items-center justify-center py-16 text-center">
           <svg class="w-12 h-12 text-gray-200 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
