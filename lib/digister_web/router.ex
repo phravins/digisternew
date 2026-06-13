@@ -90,6 +90,7 @@ defmodule DigisterWeb.Router do
     live "/profile", ProfileLive, :index
     live "/settings", SettingsLive, :index
     live "/registers", RegistersLive, :index
+    live "/registers/new", CreateRegisterLive, :new
 
     get "/companies/export", ExportController, :companies
     get "/users/export", ExportController, :users
