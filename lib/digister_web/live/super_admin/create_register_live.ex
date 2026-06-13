@@ -49,6 +49,20 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
     {:noreply, assign(socket, :fields, fields)}
   end
 
+  def handle_event("update_label", %{"id" => id_str, "value" => val}, socket) do
+    id = String.to_integer(id_str)
+    fields = Enum.map(socket.assigns.fields, fn f ->
+      if f.id == id, do: %{f | label: val}, else: f
+    end)
+    {:noreply, assign(socket, :fields, fields)}
+  end
+
+  def handle_event("reorder_fields", %{"order" => order}, socket) do
+    by_id = Map.new(socket.assigns.fields, &{to_string(&1.id), &1})
+    fields = order |> Enum.map(&Map.get(by_id, &1)) |> Enum.reject(&is_nil/1)
+    {:noreply, assign(socket, :fields, fields)}
+  end
+
   def handle_event("update_config", %{"id" => id_str, "key" => key, "value" => val}, socket) do
     id = String.to_integer(id_str)
     atom_key = case key do
@@ -144,7 +158,9 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
 
       case Registers.create_register(attrs) do
         {:ok, register} ->
-          Enum.each(socket.assigns.fields, fn field ->
+          socket.assigns.fields
+          |> Enum.with_index()
+          |> Enum.each(fn {field, index} ->
             label = String.trim(params["label_#{field.id}"] || "")
             effective_label = if label == "", do: type_label(field.type), else: label
 
@@ -163,7 +179,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               field_key: slugify(effective_label) <> "_#{field.id}",
               field_type: field.type,
               required: field.required,
-              position: field.id,
+              position: index,
               options: options
             })
           end)
@@ -459,13 +475,15 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               <p class="text-xs text-gray-300">Pick a field type from the left panel to add it.</p>
             </div>
           <% else %>
-            <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            <div id="fields-list" phx-hook="Sortable" class="flex-1 overflow-y-auto p-4 space-y-2">
               <div :for={field <- @fields}
+                id={"field-#{field.id}"}
+                data-id={field.id}
                 class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
 
                 <%!-- Field row top: handle + badge + label + delete --%>
                 <div class="flex items-center gap-3 px-4 py-3">
-                  <svg class="w-4 h-4 text-gray-300 flex-shrink-0 cursor-grab" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <svg data-drag-handle class="w-4 h-4 text-gray-300 flex-shrink-0 cursor-grab active:cursor-grabbing" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 8h16M4 16h16" />
                   </svg>
                   <span class={["px-2 py-0.5 rounded border text-xs font-semibold flex-shrink-0 whitespace-nowrap", type_color(field.type)]}>
@@ -473,6 +491,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
                   </span>
                   <input type="text" name={"label_#{field.id}"} value={field.label}
                     placeholder="Field label"
+                    phx-blur="update_label" phx-value-id={field.id}
                     class="flex-1 text-sm text-gray-900 bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-gray-400 min-w-0" />
                   <button type="button"
                     phx-click="remove_field" phx-value-id={field.id}

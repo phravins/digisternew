@@ -3,6 +3,7 @@ defmodule DigisterWeb.UserSessionController do
 
   alias Digister.Accounts
   alias Digister.Activities
+  alias Digister.Organisations
   alias DigisterWeb.UserAuth
 
   # magic link login
@@ -15,11 +16,24 @@ defmodule DigisterWeb.UserSessionController do
 
     case Accounts.login_user_by_magic_link(token) do
       {:ok, {user, _expired_tokens}} ->
-        Activities.log(%{user_name: user.email, action: "signed in via magic link"})
-        Accounts.update_signed_on(user)
-        conn
-        |> put_flash(:info, info)
-        |> UserAuth.log_in_user(user, user_params)
+        cond do
+          Accounts.login_blocked?(user) ->
+            conn
+            |> put_flash(:error, "Your account has been deactivated. Please contact administrator.")
+            |> redirect(to: ~p"/users/log-in")
+
+          Organisations.deactivated_for_user?(user) ->
+            conn
+            |> put_flash(:error, "Your company has been deactivated. Please contact administrator.")
+            |> redirect(to: ~p"/users/log-in")
+
+          true ->
+            Activities.log(%{user_name: user.email, action: "signed in via magic link"})
+            Accounts.update_signed_on(user)
+            conn
+            |> put_flash(:info, info)
+            |> UserAuth.log_in_user(user, user_params)
+        end
 
       {:error, :not_found} ->
         conn
@@ -30,19 +44,37 @@ defmodule DigisterWeb.UserSessionController do
 
   # email + password login
   def create(conn, %{"user" => %{"email" => email, "password" => password} = user_params}) do
-    if user = Accounts.get_user_by_email_and_password(email, password) do
-      Activities.log(%{user_name: user.email, action: "signed in"})
-      Accounts.update_signed_on(user)
-      conn
-      |> put_flash(:info, "Welcome back!")
-      |> UserAuth.log_in_user(user, user_params)
-    else
-      form = Phoenix.Component.to_form(user_params, as: "user")
+    user = Accounts.get_user_by_email_and_password(email, password)
 
-      # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
-      conn
-      |> put_flash(:error, "Invalid email or password")
-      |> render(:new, form: form)
+    cond do
+      is_nil(user) ->
+        form = Phoenix.Component.to_form(user_params, as: "user")
+
+        # In order to prevent user enumeration attacks, don't disclose whether the email is registered.
+        conn
+        |> put_flash(:error, "Invalid email or password")
+        |> render(:new, form: form)
+
+      Accounts.login_blocked?(user) ->
+        form = Phoenix.Component.to_form(user_params, as: "user")
+
+        conn
+        |> put_flash(:error, "Your account has been deactivated. Please contact administrator.")
+        |> render(:new, form: form)
+
+      Organisations.deactivated_for_user?(user) ->
+        form = Phoenix.Component.to_form(user_params, as: "user")
+
+        conn
+        |> put_flash(:error, "Your company has been deactivated. Please contact administrator.")
+        |> render(:new, form: form)
+
+      true ->
+        Activities.log(%{user_name: user.email, action: "signed in"})
+        Accounts.update_signed_on(user)
+        conn
+        |> put_flash(:info, "Welcome back!")
+        |> UserAuth.log_in_user(user, user_params)
     end
   end
 

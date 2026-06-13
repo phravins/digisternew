@@ -25,11 +25,30 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/digister"
 import topbar from "../vendor/topbar"
 
+const Hooks = {
+  Sortable: {
+    mounted() {
+      this.sortable = window.Sortable.create(this.el, {
+        handle: "[data-drag-handle]",
+        animation: 150,
+        ghostClass: "opacity-40",
+        onEnd: () => {
+          const order = Array.from(this.el.children).map(c => c.dataset.id)
+          this.pushEvent("reorder_fields", {order})
+        },
+      })
+    },
+    destroyed() {
+      this.sortable && this.sortable.destroy()
+    },
+  },
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ...Hooks},
 })
 
 // Show progress bar on live navigation and form submits

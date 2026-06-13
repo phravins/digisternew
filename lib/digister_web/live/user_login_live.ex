@@ -2,6 +2,7 @@ defmodule DigisterWeb.UserLoginLive do
   use DigisterWeb, :live_view
 
   alias Digister.Accounts
+  alias Digister.Organisations
   alias Phoenix.LiveView.JS
 
   def mount(_params, _session, socket) do
@@ -92,10 +93,19 @@ defmodule DigisterWeb.UserLoginLive do
   def handle_event("submit_login", %{"email" => email, "password" => password} = params, socket) do
     remember_me = Map.get(params, "remember_me") == "true"
 
-    case Accounts.get_user_by_email_and_password(String.trim(email), password) do
-      nil ->
+    user = Accounts.get_user_by_email_and_password(String.trim(email), password)
+
+    cond do
+      is_nil(user) ->
         {:noreply, put_flash(socket, :error, "Invalid email or password.")}
-      user ->
+
+      Accounts.login_blocked?(user) ->
+        {:noreply, put_flash(socket, :error, "Your account has been deactivated. Please contact administrator.")}
+
+      Organisations.deactivated_for_user?(user) ->
+        {:noreply, put_flash(socket, :error, "Your company has been deactivated. Please contact administrator.")}
+
+      true ->
         token = Accounts.generate_user_session_token(user)
         encoded = Base.url_encode64(token, padding: false)
         path = if remember_me, do: ~p"/users/log-in/#{encoded}?remember_me=true", else: ~p"/users/log-in/#{encoded}"

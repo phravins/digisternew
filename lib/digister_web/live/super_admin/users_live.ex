@@ -2,6 +2,7 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
   use DigisterWeb, :live_view
 
   alias Digister.Accounts
+  alias Digister.Organisations
 
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
@@ -14,19 +15,127 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
      |> assign(:active_nav, :users)
      |> assign(:users, users)
      |> assign(:all_users, users)
+     |> assign(:orgs, Organisations.list_organisations())
+     |> assign(:current_user_id, socket.assigns.current_scope.user.id)
+     |> assign(:toggle_user, nil)
+     |> assign(:edit_user, nil)
+     |> assign(:delete_user, nil)
+     |> assign(:form_errors, %{})
+     |> assign(:form_data, %{})
      |> assign(:search, "")}
   end
 
-  def handle_event("search", %{"q" => q}, socket) do
-    q = String.downcase(String.trim(q))
-    filtered =
-      socket.assigns.all_users
-      |> Enum.filter(fn u ->
+  defp filter_users(all_users, search) do
+    q = String.downcase(String.trim(search || ""))
+
+    Enum.filter(all_users, fn u ->
+      q == "" or
         String.contains?(String.downcase(u.username || ""), q) or
         String.contains?(String.downcase(u.email || ""), q) or
         String.contains?(String.downcase(u.org_name || ""), q)
-      end)
-    {:noreply, socket |> assign(:search, q) |> assign(:users, filtered)}
+    end)
+  end
+
+  defp refresh_users(socket) do
+    users = Accounts.list_users_with_orgs()
+
+    socket
+    |> assign(:all_users, users)
+    |> assign(:users, filter_users(users, socket.assigns.search))
+  end
+
+  def handle_event("search", %{"q" => q}, socket) do
+    {:noreply,
+     socket
+     |> assign(:search, q)
+     |> assign(:users, filter_users(socket.assigns.all_users, q))}
+  end
+
+  # Activate / deactivate
+  def handle_event("confirm_toggle", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :toggle_user, Accounts.get_user!(id))}
+  end
+
+  def handle_event("cancel_toggle", _params, socket) do
+    {:noreply, assign(socket, :toggle_user, nil)}
+  end
+
+  def handle_event("do_toggle", _params, socket) do
+    user = socket.assigns.toggle_user
+    {:ok, updated} = Accounts.set_user_active(user, !user.is_active)
+    verb = if updated.is_active, do: "activated", else: "deactivated"
+
+    {:noreply,
+     socket
+     |> assign(:toggle_user, nil)
+     |> refresh_users()
+     |> put_flash(:info, "User #{verb}.")}
+  end
+
+  # Edit
+  def handle_event("open_edit", %{"id" => id}, socket) do
+    user = Accounts.get_user!(id)
+
+    {:noreply,
+     socket
+     |> assign(:edit_user, user)
+     |> assign(:form_errors, %{})
+     |> assign(:form_data, %{
+       "username" => user.username || "",
+       "role" => user.role || "member",
+       "organisation_id" => user.organisation_id || ""
+     })}
+  end
+
+  def handle_event("close_edit", _params, socket) do
+    {:noreply, socket |> assign(:edit_user, nil) |> assign(:form_errors, %{})}
+  end
+
+  def handle_event("update_user", %{"username" => username, "role" => role, "organisation_id" => org_id}, socket) do
+    errors =
+      %{}
+      |> then(fn e -> if String.trim(username) == "", do: Map.put(e, :username, "Name is required."), else: e end)
+
+    if errors == %{} do
+      attrs = %{
+        username: username,
+        role: role,
+        organisation_id: if(String.trim(org_id) == "", do: nil, else: org_id)
+      }
+
+      case Accounts.admin_update_user(socket.assigns.edit_user, attrs) do
+        {:ok, _user} ->
+          {:noreply,
+           socket
+           |> assign(:edit_user, nil)
+           |> refresh_users()
+           |> put_flash(:info, "User updated successfully.")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to update user.")}
+      end
+    else
+      {:noreply, assign(socket, :form_errors, errors)}
+    end
+  end
+
+  # Soft delete
+  def handle_event("confirm_delete", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :delete_user, Accounts.get_user!(id))}
+  end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, :delete_user, nil)}
+  end
+
+  def handle_event("do_delete", _params, socket) do
+    Accounts.soft_delete_user(socket.assigns.delete_user)
+
+    {:noreply,
+     socket
+     |> assign(:delete_user, nil)
+     |> refresh_users()
+     |> put_flash(:info, "User removed.")}
   end
 
   defp role_label(%{role: "super_admin"}), do: "Super Admin"
@@ -170,17 +279,32 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
                 <td class="px-5 py-4 text-sm text-gray-600">{fmt_dt(user.signed_on)}</td>
                 <td class="px-5 py-4">
                   <div class="flex items-center justify-end gap-3">
-                    <button :if={user.role != "super_admin"} type="button" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <%!-- Key: activate / deactivate (not on own account) --%>
+                    <button :if={user.id != @current_user_id} type="button"
+                      phx-click="confirm_toggle" phx-value-id={user.id}
+                      title={if user.is_active, do: "Deactivate", else: "Activate"}
+                      class={[
+                        "transition-colors",
+                        if(user.is_active, do: "text-green-600 hover:text-green-700", else: "text-amber-500 hover:text-amber-600")
+                      ]}>
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                       </svg>
                     </button>
-                    <button type="button" class="text-gray-400 hover:text-indigo-600 transition-colors">
+                    <%!-- Edit --%>
+                    <button type="button"
+                      phx-click="open_edit" phx-value-id={user.id}
+                      title="Edit"
+                      class="text-gray-400 hover:text-indigo-600 transition-colors">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
-                    <button :if={user.role != "super_admin"} type="button" class="text-gray-400 hover:text-red-500 transition-colors">
+                    <%!-- Soft delete (not on own account) --%>
+                    <button :if={user.id != @current_user_id} type="button"
+                      phx-click="confirm_delete" phx-value-id={user.id}
+                      title="Delete"
+                      class="text-gray-400 hover:text-red-500 transition-colors">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
@@ -192,6 +316,112 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
           </tbody>
         </table>
       </div>
+
+      <%!-- Edit User Modal --%>
+      <div :if={@edit_user} class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/20" phx-click="close_edit"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md mx-4 p-8">
+          <h2 class="text-xl font-bold text-gray-900">Edit User</h2>
+          <p class="text-sm text-gray-500 mt-1 mb-6">Update the user's details.</p>
+          <form phx-submit="update_user" class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                Full Name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" name="username" value={@form_data["username"]}
+                placeholder="Jane Doe"
+                class={[
+                  "w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent",
+                  if(@form_errors[:username], do: "border-red-400 focus:ring-red-300", else: "border-gray-300 focus:ring-gray-400")
+                ]} />
+              <p :if={@form_errors[:username]} class="mt-1.5 text-xs text-red-500">{@form_errors[:username]}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
+                <select name="role"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
+                  <option value="super_admin" selected={@form_data["role"] == "super_admin"}>Super Admin</option>
+                  <option value="admin" selected={@form_data["role"] == "admin"}>Admin</option>
+                  <option value="member" selected={@form_data["role"] == "member"}>User</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
+                <select name="organisation_id"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
+                  <option value="">No company</option>
+                  <option :for={org <- @orgs} value={org.id} selected={@form_data["organisation_id"] == org.id}>{org.name}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="button" phx-click="close_edit"
+                class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="submit"
+                class="flex-1 bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium text-white">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <%!-- Activate / Deactivate Confirm Modal --%>
+      <div :if={@toggle_user} class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/20" phx-click="cancel_toggle"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+          <h3 class="text-base font-semibold text-gray-900 mb-1">
+            {if @toggle_user.is_active, do: "Deactivate user?", else: "Activate user?"}
+          </h3>
+          <p class="text-sm text-gray-500 mb-5">
+            <%= if @toggle_user.is_active do %>
+              "{@toggle_user.username || @toggle_user.email}" will be deactivated and won't be able to log in until reactivated. Other accounts are unaffected.
+            <% else %>
+              "{@toggle_user.username || @toggle_user.email}" will be reactivated and able to log in again.
+            <% end %>
+          </p>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" phx-click="cancel_toggle"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="button" phx-click="do_toggle"
+              class={[
+                "px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors",
+                if(@toggle_user.is_active, do: "bg-red-600 hover:bg-red-700", else: "bg-green-600 hover:bg-green-700")
+              ]}>
+              {if @toggle_user.is_active, do: "Deactivate", else: "Activate"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Delete (soft) Confirm Modal --%>
+      <div :if={@delete_user} class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/20" phx-click="cancel_delete"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+          <h3 class="text-base font-semibold text-gray-900 mb-1">Remove user?</h3>
+          <p class="text-sm text-gray-500 mb-5">
+            "{@delete_user.username || @delete_user.email}" will be removed from the directory. The record is kept and can be restored later.
+          </p>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" phx-click="cancel_delete"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="button" phx-click="do_delete"
+              class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
     """
   end

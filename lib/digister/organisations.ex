@@ -66,4 +66,23 @@ defmodule Digister.Organisations do
   def delete_organisation(%Organisation{} = org) do
     Repo.update(Organisation.changeset(org, %{is_active: false}))
   end
+
+  def set_active(%Organisation{} = org, active?) when is_boolean(active?) do
+    org
+    |> Organisation.changeset(%{is_active: active?})
+    |> Repo.update()
+  end
+
+  def purge_organisation(%Organisation{} = org), do: Repo.delete(org)
+
+  def deactivated_for_user?(%{organisation_id: nil}), do: false
+
+  def deactivated_for_user?(%{organisation_id: org_id}) when is_binary(org_id) do
+    case Repo.get(Organisation, org_id) do
+      %Organisation{is_active: false} -> true
+      _ -> false
+    end
+  end
+
+  def deactivated_for_user?(_), do: false
 end

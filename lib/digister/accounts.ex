@@ -107,6 +107,7 @@ defmodule Digister.Accounts do
     Repo.all(
       from u in User,
         left_join: o in Digister.Organisations.Organisation, on: u.organisation_id == o.id,
+        where: is_nil(u.deleted_at),
         order_by: [asc: u.inserted_at],
         select: %{
           id: u.id,
@@ -215,6 +216,33 @@ defmodule Digister.Accounts do
     |> User.profile_changeset(attrs)
     |> Repo.update()
   end
+
+  def admin_update_user(user, attrs) do
+    user
+    |> User.admin_changeset(attrs)
+    |> Repo.update()
+  end
+
+  def set_user_active(%User{} = user, active?) when is_boolean(active?) do
+    user
+    |> Ecto.Changeset.change(is_active: active?)
+    |> Repo.update()
+  end
+
+  def soft_delete_user(%User{} = user) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    user
+    |> Ecto.Changeset.change(deleted_at: now)
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns true when the user is blocked from logging in because their account
+  is deactivated or soft-deleted.
+  """
+  def login_blocked?(%User{} = user), do: !user.is_active or not is_nil(user.deleted_at)
+  def login_blocked?(_), do: false
 
   def delete_user(%User{} = user) do
     Repo.transaction(fn ->

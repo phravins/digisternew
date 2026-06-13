@@ -22,8 +22,16 @@ defmodule Digister.Accounts.User do
     field :otp_code, :string
     field :otp_expires_at, :naive_datetime
     field :organisation_id, :binary_id
+    field :deleted_at, :naive_datetime
 
     timestamps(type: :utc_datetime)
+  end
+
+  def admin_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :role, :organisation_id])
+    |> validate_length(:username, max: 100)
+    |> validate_inclusion(:role, ["super_admin", "admin", "member"])
   end
 
   def super_admin_changeset(user, attrs) do
