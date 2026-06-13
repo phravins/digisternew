@@ -26,6 +26,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
      |> assign(:filter, "all")
      |> assign(:show_modal, false)
      |> assign(:modal_step, 1)
+     |> assign(:form_errors, %{})
      |> assign(:industries, @industries)
      |> assign(:countries, @countries)
      |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
@@ -58,24 +59,42 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
      socket
      |> assign(:show_modal, true)
      |> assign(:modal_step, 1)
+     |> assign(:form_errors, %{})
      |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, :show_modal, false)}
+    {:noreply, socket |> assign(:show_modal, false) |> assign(:form_errors, %{})}
+  end
+
+  def handle_event("slugify_name", %{"value" => name}, socket) do
+    slug =
+      name
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9\s]/, "")
+      |> String.replace(~r/\s+/, "-")
+      |> String.replace(~r/-+/, "-")
+      |> String.trim("-")
+
+    form_data = Map.merge(socket.assigns.form_data, %{"name" => name, "slug" => slug})
+    errors = Map.delete(socket.assigns.form_errors, :name)
+    {:noreply, socket |> assign(:form_data, form_data) |> assign(:form_errors, errors)}
   end
 
   def handle_event("next_step", %{"name" => name, "slug" => slug, "industry" => industry, "country" => country}, socket) do
-    cond do
-      String.trim(name) == "" ->
-        {:noreply, put_flash(socket, :error, "Company name is required.")}
-      String.trim(slug) == "" ->
-        {:noreply, put_flash(socket, :error, "Link is required.")}
-      true ->
-        {:noreply,
-         socket
-         |> assign(:modal_step, 2)
-         |> assign(:form_data, %{"name" => name, "slug" => slug, "industry" => industry, "country" => country})}
+    errors =
+      %{}
+      |> then(fn e -> if String.trim(name) == "", do: Map.put(e, :name, "Company name is required."), else: e end)
+      |> then(fn e -> if String.trim(slug) == "", do: Map.put(e, :slug, "Workspace link is required."), else: e end)
+
+    if errors == %{} do
+      {:noreply,
+       socket
+       |> assign(:modal_step, 2)
+       |> assign(:form_errors, %{})
+       |> assign(:form_data, %{"name" => name, "slug" => slug, "industry" => industry, "country" => country})}
+    else
+      {:noreply, assign(socket, :form_errors, errors)}
     end
   end
 
@@ -85,7 +104,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
     admin_phone = Map.get(params, "admin_phone", "")
     cond do
       String.trim(admin_email) == "" ->
-        {:noreply, put_flash(socket, :error, "Admin email is required.")}
+        {:noreply, assign(socket, :form_errors, %{email: "Admin email is required."})}
       true ->
         case Organisations.create_organisation(%{
           name: data["name"],
@@ -248,25 +267,36 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
             <p class="text-sm text-gray-500 mt-1 mb-6">Set up the company workspace details.</p>
             <form phx-submit="next_step" class="space-y-5">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Company Name</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Company Name <span class="text-red-500">*</span>
+                </label>
                 <input type="text" name="name" value={@form_data["name"]}
                   placeholder="Acme Inc."
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent" />
+                  phx-keyup="slugify_name"
+                  class={[
+                    "w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent",
+                    if(@form_errors[:name], do: "border-red-400 focus:ring-red-300", else: "border-gray-300 focus:ring-gray-400")
+                  ]} />
+                <p :if={@form_errors[:name]} class="mt-1.5 text-xs text-red-500">{@form_errors[:name]}</p>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                  Workspace Link
+                  Workspace Link <span class="text-red-500">*</span>
                   <span class="ml-1 text-xs text-gray-400 font-normal">Used in workspace URL</span>
                 </label>
-                <div class="flex items-stretch border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-gray-400">
+                <div class={[
+                  "flex items-stretch border rounded-lg overflow-hidden focus-within:ring-2",
+                  if(@form_errors[:slug], do: "border-red-400 focus-within:ring-red-300", else: "border-gray-300 focus-within:ring-gray-400")
+                ]}>
                   <span class="px-3 py-2.5 bg-gray-50 text-xs text-gray-400 border-r border-gray-300 flex items-center whitespace-nowrap">
-                    digisters.in/
+                    apps.realoffice.in/digister/
                   </span>
                   <input type="text" name="slug" value={@form_data["slug"]}
                     placeholder="acme-inc"
                     class="flex-1 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white" />
                 </div>
+                <p :if={@form_errors[:slug]} class="mt-1.5 text-xs text-red-500">{@form_errors[:slug]}</p>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
@@ -295,7 +325,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
                 </button>
                 <button type="submit"
                   class="flex-1 bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-2.5 text-sm font-medium text-white">
-                  Continue
+                  Create
                 </button>
               </div>
             </form>
@@ -320,9 +350,15 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email <span class="text-red-500">*</span>
+                </label>
                 <input type="email" name="admin_email" placeholder="admin@company.com"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+                  class={[
+                    "w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent",
+                    if(@form_errors[:email], do: "border-red-400 focus:ring-red-300", else: "border-gray-300 focus:ring-gray-400")
+                  ]} />
+                <p :if={@form_errors[:email]} class="mt-1.5 text-xs text-red-500">{@form_errors[:email]}</p>
               </div>
 
               <div>
