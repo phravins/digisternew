@@ -135,8 +135,15 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
                 <td class="px-5 py-4 text-sm text-gray-400">{idx}</td>
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
-                    <div class={["w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold", avatar_colors(user)]}>
-                      {initials(user)}
+                    <div class="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden">
+                      <%= if user.avatar do %>
+                        <img src={"data:#{user.avatar_content_type};base64,#{Base.encode64(user.avatar)}"}
+                          class="w-9 h-9 object-cover" />
+                      <% else %>
+                        <div class={["w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold", avatar_colors(user)]}>
+                          {initials(user)}
+                        </div>
+                      <% end %>
                     </div>
                     <div>
                       <p class="font-medium text-gray-900 text-sm">{user.username || "—"}</p>

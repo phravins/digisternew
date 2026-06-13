@@ -236,7 +236,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 class="text-base font-semibold text-gray-900">Platform Activity</h2>
-              <p class="text-xs text-gray-400 mt-0.5">Daily logins and new companies</p>
+              <p class="text-xs text-gray-400 mt-0.5">Daily logins and companies</p>
             </div>
             <div class="flex items-center gap-2">
               <form phx-change="change_chart_period" class="flex items-center gap-2">
@@ -249,12 +249,12 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </form>
               <div class="flex items-center gap-3 ml-2">
                 <span class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span>
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color:#4ade80"></span>
                   Active Users
                 </span>
                 <span class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>
-                  New Companies
+                  <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color:#f87171"></span>
+                  Companies
                 </span>
               </div>
             </div>
@@ -264,12 +264,12 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             <div class="flex items-end gap-0.5 h-48">
               <%= for day_data <- @chart_data do %>
                 <div class="flex-1 flex items-end gap-px min-w-0">
-                  <div class="flex-1 bg-green-400 rounded-t-sm"
-                    style={"height: #{max(1, round(day_data.active * 100 / max_val))}%"}
+                  <div class="flex-1 rounded-t-sm"
+                    style={"background-color:#4ade80; height:#{if day_data.active > 0, do: max(4, round(day_data.active * 100 / max_val)), else: 0}%"}
                     title={"Day #{day_data.day}: #{day_data.active} active users"}></div>
-                  <div class="flex-1 bg-red-400 rounded-t-sm"
-                    style={"height: #{max(1, round(day_data.companies * 100 / max_val))}%"}
-                    title={"Day #{day_data.day}: #{day_data.companies} new companies"}></div>
+                  <div class="flex-1 rounded-t-sm"
+                    style={"background-color:#f87171; height:#{if day_data.companies > 0, do: max(4, round(day_data.companies * 100 / max_val)), else: 0}%"}
+                    title={"Day #{day_data.day}: #{day_data.companies} companies"}></div>
                 </div>
               <% end %>
             </div>

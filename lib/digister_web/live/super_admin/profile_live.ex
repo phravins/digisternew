@@ -4,7 +4,7 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
   def mount(_params, _session, socket) do
-    user = socket.assigns.current_scope.user
+    user = Digister.Accounts.get_user!(socket.assigns.current_scope.user.id)
 
     organisation =
       if user.organisation_id do
@@ -40,34 +40,22 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
      |> allow_upload(:avatar,
          accept: ~w(.jpg .jpeg .png .gif .webp),
          max_entries: 1,
-         max_file_size: 5_000_000,
-         auto_upload: true)}
-  end
-
-  def handle_progress(:avatar, entry, socket) do
-    if entry.done? do
-      [{data, ct}] =
-        consume_uploaded_entries(socket, :avatar, fn %{path: path}, _entry ->
-          {:ok, {File.read!(path), entry.client_type}}
-        end)
-
-      case Digister.Accounts.update_user_profile(socket.assigns.user, %{
-             avatar: data,
-             avatar_content_type: ct
-           }) do
-        {:ok, updated_user} ->
-          {:noreply, assign(socket, :user, updated_user)}
-
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to upload photo.")}
-      end
-    else
-      {:noreply, socket}
-    end
+         max_file_size: 5_000_000)}
   end
 
   def handle_event("save", %{"full_name" => name}, socket) do
-    case Digister.Accounts.update_user_profile(socket.assigns.user, %{username: name}) do
+    avatar_results =
+      consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
+        {:ok, {File.read!(path), entry.client_type}}
+      end)
+
+    attrs =
+      case avatar_results do
+        [{data, ct} | _] -> %{username: name, avatar: data, avatar_content_type: ct}
+        [] -> %{username: name}
+      end
+
+    case Digister.Accounts.update_user_profile(socket.assigns.user, attrs) do
       {:ok, updated_user} ->
         {:noreply,
          socket
@@ -187,11 +175,7 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
             <%!-- Upload status --%>
             <%= for entry <- @uploads.avatar.entries do %>
               <div class="flex items-center gap-2">
-                <%= if entry.done? do %>
-                  <p class="text-xs text-green-600 font-medium">Photo ready — click Save changes</p>
-                <% else %>
-                  <p class="text-xs text-gray-500">Uploading… {entry.progress}%</p>
-                <% end %>
+                <p class="text-xs text-green-600 font-medium">Photo selected — click Save changes</p>
                 <button type="button" phx-click="cancel_upload" phx-value-ref={entry.ref}
                   class="text-gray-400 hover:text-red-500 transition-colors">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

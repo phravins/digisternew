@@ -116,7 +116,9 @@ defmodule Digister.Accounts do
           is_active: u.is_active,
           signed_on: u.signed_on,
           inserted_at: u.inserted_at,
-          org_name: o.name
+          org_name: o.name,
+          avatar: u.avatar,
+          avatar_content_type: u.avatar_content_type
         }
     )
   end
