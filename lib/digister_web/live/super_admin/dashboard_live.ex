@@ -33,9 +33,18 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
     {:noreply, assign(socket, :activity, [])}
   end
 
-  defp fmt_date(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y")
-  defp fmt_time(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%I:%M %p")
-  defp fmt_dt(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y - %I:%M %p")
+  defp fmt_date(%NaiveDateTime{} = dt) do
+    ist = NaiveDateTime.add(dt, 19800, :second)
+    Calendar.strftime(ist, "%d %b %Y")
+  end
+  defp fmt_time(%NaiveDateTime{} = dt) do
+    ist = NaiveDateTime.add(dt, 19800, :second)
+    Calendar.strftime(ist, "%I:%M %p")
+  end
+  defp fmt_dt(%NaiveDateTime{} = dt) do
+    ist = NaiveDateTime.add(dt, 19800, :second)
+    Calendar.strftime(ist, "%d %b %Y · %I:%M %p")
+  end
 
   def render(assigns) do
     ~H"""
@@ -222,7 +231,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-900">Activity</h3>
             <div class="flex items-center gap-1.5">
-              <button phx-click="clear_activity" data-confirm="Clear all activity? This cannot be undone."
+              <button phx-click="clear_activity"
                 class="text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 hover:bg-red-50 rounded px-2.5 py-1 transition-colors">
                 Clear
               </button>
