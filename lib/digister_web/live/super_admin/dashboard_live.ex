@@ -117,7 +117,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </svg>
             </a>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto min-h-[320px]">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-gray-100">
@@ -200,8 +200,8 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </div>
             </div>
           </div>
-          <div class="px-6 py-4">
-            <div class="flex items-end gap-1.5 h-24">
+          <div class="px-6 py-5">
+            <div class="flex items-end gap-1.5 h-48">
               <div :for={h <- [20, 45, 30, 70, 55, 80, 40, 90, 60, 35, 65, 50, 75, 45, 55, 85, 40, 70, 30, 60, 50, 80, 65, 35, 55, 75, 45, 60, 70, 40]} class="flex-1 bg-indigo-100 rounded-t-sm" style={"height: #{h}%"}></div>
             </div>
             <div class="flex justify-between mt-2 text-xs text-gray-400">
@@ -227,7 +227,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </span>
             </div>
           </div>
-          <div class="px-5 py-4 space-y-5 min-h-[420px] max-h-[520px] overflow-y-auto">
+          <div class="px-5 py-4 space-y-5 min-h-[480px] max-h-[560px] overflow-y-auto">
             <%= if @activity == [] do %>
               <p class="text-xs text-gray-400 text-center py-6">No activity yet.</p>
             <% else %>
