@@ -179,7 +179,24 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
           <tbody class="divide-y divide-gray-50">
             <%= if @orgs == [] do %>
               <tr>
-                <td colspan="6" class="px-5 py-12 text-center text-sm text-gray-400">No companies found.</td>
+                <td colspan="6" class="px-5 py-16 text-center">
+                  <div class="flex flex-col items-center gap-3">
+                    <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium text-gray-700">No companies found</p>
+                      <p class="text-xs text-gray-400 mt-0.5">Get started by adding your first company.</p>
+                    </div>
+                    <button type="button" phx-click="open_modal"
+                      class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Company
+                    </button>
+                  </div>
+                </td>
               </tr>
             <% else %>
               <tr :for={{org, idx} <- Enum.with_index(@orgs, 1)} class="hover:bg-gray-50 transition-colors">

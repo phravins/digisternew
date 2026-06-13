@@ -37,6 +37,10 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
   defp role_color(%{role: "admin"}), do: "text-green-600 font-medium"
   defp role_color(_), do: "text-gray-500"
 
+  defp avatar_colors(%{role: "super_admin"}), do: "bg-indigo-100 text-indigo-600"
+  defp avatar_colors(%{role: "admin"}), do: "bg-green-100 text-green-600"
+  defp avatar_colors(_), do: "bg-gray-100 text-gray-600"
+
   defp initials(user) do
     name = user.username || user.email || "?"
     name
@@ -104,15 +108,32 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
           <tbody class="divide-y divide-gray-100">
             <%= if @users == [] do %>
               <tr>
-                <td colspan="7" class="px-5 py-12 text-center text-sm text-gray-400">No users found.</td>
+                <td colspan="7" class="px-5 py-16 text-center">
+                  <div class="flex flex-col items-center gap-3">
+                    <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium text-gray-700">No users found</p>
+                      <p class="text-xs text-gray-400 mt-0.5">Get started by adding your first user.</p>
+                    </div>
+                    <button type="button"
+                      class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add User
+                    </button>
+                  </div>
+                </td>
               </tr>
             <% else %>
               <tr :for={{user, idx} <- Enum.with_index(@users, 1)} class="hover:bg-gray-50 transition-colors">
                 <td class="px-5 py-4 text-sm text-gray-400">{idx}</td>
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                      <span class="text-xs font-semibold text-indigo-600">{initials(user)}</span>
+                    <div class={["w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold", avatar_colors(user)]}>
+                      {initials(user)}
                     </div>
                     <div>
                       <p class="font-medium text-gray-900 text-sm">{user.username || "—"}</p>
@@ -126,13 +147,11 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
                 </td>
                 <td class="px-5 py-4">
                   <span class={[
-                    "inline-flex items-center gap-1.5 text-xs font-medium",
-                    if(user.is_active, do: "text-green-600", else: "text-gray-400")
+                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                    if(user.is_active,
+                      do: "border-green-300 bg-green-50 text-green-700",
+                      else: "border-gray-300 bg-gray-50 text-gray-500")
                   ]}>
-                    <span class={[
-                      "w-1.5 h-1.5 rounded-full",
-                      if(user.is_active, do: "bg-green-500", else: "bg-gray-300")
-                    ]}></span>
                     {if user.is_active, do: "Active", else: "Inactive"}
                   </span>
                 </td>

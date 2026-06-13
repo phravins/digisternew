@@ -117,9 +117,9 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </svg>
             </a>
           </div>
-          <div class="overflow-x-auto min-h-[320px]">
+          <div class="overflow-x-auto overflow-y-auto min-h-[320px] max-h-[420px]">
             <table class="w-full text-sm">
-              <thead>
+              <thead class="sticky top-0 bg-white z-10">
                 <tr class="border-b border-gray-100">
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">S No</th>
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Company</th>
