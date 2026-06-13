@@ -115,7 +115,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
     org = Organisations.get_organisation!(id)
     Organisations.delete_organisation(org)
     orgs = Organisations.list_organisations()
-    {:noreply, socket |> assign(:orgs, orgs) |> assign(:all_orgs, orgs) |> put_flash(:info, "Company deactivated.")}
+    {:noreply, socket |> assign(:orgs, orgs) |> assign(:all_orgs, orgs) |> put_flash(:error, "Company deactivated.")}
   end
 
   defp fmt_date(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y")
@@ -129,12 +129,6 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
         <div>
           <h1 class="text-2xl font-bold text-gray-900">Companies</h1>
           <p class="text-sm text-gray-400 mt-0.5">Manage and monitor all tenant workspaces</p>
-        </div>
-        <div class="flex items-center gap-2 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg px-3 py-1.5">
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>{Calendar.strftime(Date.utc_today(), "%d %b %Y")}</span>
         </div>
       </div>
 
@@ -160,13 +154,13 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-        <button type="button"
+        <a href="/super-admin/companies/export"
           class="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
           Export
-        </button>
+        </a>
         <button type="button" phx-click="open_modal"
           class="flex items-center gap-1.5 rounded-lg bg-gray-900 hover:bg-gray-700 px-4 py-2.5 text-sm font-medium text-white transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

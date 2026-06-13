@@ -89,5 +89,8 @@ defmodule DigisterWeb.Router do
     live "/users", UsersLive, :index
     live "/profile", ProfileLive, :index
     live "/settings", SettingsLive, :index
+
+    get "/companies/export", ExportController, :companies
+    get "/users/export", ExportController, :users
   end
 end
