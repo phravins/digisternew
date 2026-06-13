@@ -40,6 +40,37 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
+// Real-time clock for #sa-datetime
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+function updateClock() {
+  const el = document.getElementById("sa-datetime")
+  if (!el) return
+  const now = new Date()
+  const day = String(now.getDate()).padStart(2, "0")
+  const month = MONTHS[now.getMonth()]
+  const year = now.getFullYear()
+  let hours = now.getHours()
+  const ampm = hours >= 12 ? "PM" : "AM"
+  hours = hours % 12 || 12
+  const mins = String(now.getMinutes()).padStart(2, "0")
+  el.textContent = `${day} ${month} ${year} · ${hours}:${mins} ${ampm}`
+}
+
+function startClock() {
+  updateClock()
+  // Sync to the start of the next minute for accuracy
+  const msUntilNextMinute = (60 - new Date().getSeconds()) * 1000 - new Date().getMilliseconds()
+  setTimeout(() => {
+    updateClock()
+    setInterval(updateClock, 60000)
+  }, msUntilNextMinute)
+}
+
+startClock()
+// Re-run after LiveView navigations that re-mount the layout
+window.addEventListener("phx:page-loading-stop", startClock)
+
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session

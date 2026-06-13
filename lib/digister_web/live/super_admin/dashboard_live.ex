@@ -213,32 +213,32 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
       </div>
 
       <%!-- Right column --%>
-      <div class="w-72 flex-shrink-0 space-y-4">
+      <div class="w-96 flex-shrink-0 space-y-4">
 
         <%!-- Activity feed --%>
         <div class="bg-white rounded-xl border border-gray-200">
-          <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-900">Activity</h3>
             <div class="flex items-center gap-1.5">
-              <button class="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded px-2 py-0.5 transition-colors">Clear</button>
-              <span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded px-2 py-0.5">
+              <button class="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded px-2.5 py-1 transition-colors">Clear</button>
+              <span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded px-2.5 py-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                 Live
               </span>
             </div>
           </div>
-          <div class="px-4 py-3 space-y-3 max-h-64 overflow-y-auto">
+          <div class="px-5 py-4 space-y-5 max-h-[520px] overflow-y-auto">
             <%= if @activity == [] do %>
-              <p class="text-xs text-gray-400 text-center py-4">No activity yet.</p>
+              <p class="text-xs text-gray-400 text-center py-6">No activity yet.</p>
             <% else %>
-              <div :for={item <- @activity} class="flex items-start gap-2.5">
-                <div class="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+              <div :for={item <- @activity} class="flex items-start gap-3">
+                <div class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg class="w-3.5 h-3.5 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                   </svg>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-xs text-gray-700 leading-snug">
+                  <p class="text-sm text-gray-700 leading-snug">
                     <span :if={item.user_name} class="font-medium">{item.user_name}</span>
                     {item.action}
                   </p>
@@ -251,31 +251,31 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
 
         <%!-- Quick actions --%>
         <div class="bg-white rounded-xl border border-gray-200">
-          <div class="px-4 py-3 border-b border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100">
             <h3 class="text-sm font-semibold text-gray-900">Quick actions</h3>
           </div>
-          <div class="p-3 grid grid-cols-2 gap-2">
-            <button class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-700">
-              <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <div class="p-5 grid grid-cols-2 gap-4">
+            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+              <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               + New org
             </button>
-            <button class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-700">
-              <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Users
             </button>
-            <a href={~p"/super-admin/settings"} class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-700">
-              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <a href={~p"/super-admin/settings"} class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+              <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Settings
             </a>
-            <button class="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-700">
-              <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+              <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               Export CSV
