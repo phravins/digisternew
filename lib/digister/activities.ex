@@ -12,4 +12,8 @@ defmodule Digister.Activities do
     |> Activity.changeset(attrs)
     |> Repo.insert()
   end
+
+  def clear_all do
+    Repo.delete_all(Activity)
+  end
 end

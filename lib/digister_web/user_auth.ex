@@ -34,6 +34,7 @@ defmodule DigisterWeb.UserAuth do
   """
   def log_in_user(conn, user, params \\ %{}) do
     user_return_to = get_session(conn, :user_return_to)
+    Accounts.update_signed_on(user)
 
     conn
     |> create_or_extend_session(user, params)

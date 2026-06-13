@@ -52,7 +52,7 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
   end
 
   defp fmt_dt(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y · %I:%M %p")
-  defp fmt_dt(_), do: "—"
+  defp fmt_dt(_), do: "Never"
 
   def render(assigns) do
     ~H"""
@@ -141,7 +141,9 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
                     </div>
                   </div>
                 </td>
-                <td class="px-5 py-4 text-sm text-gray-700">{user.org_name || "—"}</td>
+                <td class="px-5 py-4 text-sm text-gray-700">
+                  {user.org_name || if(user.role == "super_admin", do: "Realoffice", else: "—")}
+                </td>
                 <td class="px-5 py-4">
                   <span class={["text-sm", role_color(user)]}>{role_label(user)}</span>
                 </td>

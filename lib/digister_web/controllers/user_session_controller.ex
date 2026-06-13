@@ -16,6 +16,7 @@ defmodule DigisterWeb.UserSessionController do
     case Accounts.login_user_by_magic_link(token) do
       {:ok, {user, _expired_tokens}} ->
         Activities.log(%{user_name: user.email, action: "signed in via magic link"})
+        Accounts.update_signed_on(user)
         conn
         |> put_flash(:info, info)
         |> UserAuth.log_in_user(user, user_params)
@@ -31,6 +32,7 @@ defmodule DigisterWeb.UserSessionController do
   def create(conn, %{"user" => %{"email" => email, "password" => password} = user_params}) do
     if user = Accounts.get_user_by_email_and_password(email, password) do
       Activities.log(%{user_name: user.email, action: "signed in"})
+      Accounts.update_signed_on(user)
       conn
       |> put_flash(:info, "Welcome back!")
       |> UserAuth.log_in_user(user, user_params)
@@ -69,6 +71,7 @@ defmodule DigisterWeb.UserSessionController do
       user_params = if remember_me, do: %{"remember_me" => "true"}, else: %{}
 
       Activities.log(%{user_name: user.email, action: "signed in to platform admin"})
+      Accounts.update_signed_on(user)
       conn
       |> put_flash(:info, "Welcome back!")
       |> UserAuth.log_in_user(user, user_params)

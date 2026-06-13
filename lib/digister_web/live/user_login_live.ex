@@ -27,7 +27,7 @@ defmodule DigisterWeb.UserLoginLive do
             placeholder="name@company.com"
             required
             autofocus
-            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition"
+            class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition"
           />
         </div>
 
@@ -40,7 +40,7 @@ defmodule DigisterWeb.UserLoginLive do
               name="password"
               placeholder="Enter password"
               required
-              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition pr-10"
+              class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition pr-10"
             />
             <button type="button"
               phx-click={
@@ -66,7 +66,7 @@ defmodule DigisterWeb.UserLoginLive do
             name="remember_me"
             id="remember_me"
             value="true"
-            class="w-4 h-4 rounded border-gray-300 text-sky-500 focus:ring-sky-400 cursor-pointer"
+            class="w-4 h-4 rounded border-gray-300 text-sky-500 focus:ring-gray-900 cursor-pointer"
           />
           <label for="remember_me" class="text-sm text-gray-600 cursor-pointer select-none">
             Remember me

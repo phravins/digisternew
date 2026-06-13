@@ -7,6 +7,28 @@ defmodule Digister.Organisations do
     Repo.all(from o in Organisation, order_by: [desc: o.inserted_at])
   end
 
+  def list_organisations_with_register_counts do
+    Repo.all(
+      from o in Organisation,
+        left_join: r in Digister.Registers.Register,
+          on: r.organisation_id == o.id and is_nil(r.deleted_at),
+        group_by: o.id,
+        order_by: [desc: o.inserted_at],
+        select: %{
+          id: o.id,
+          name: o.name,
+          slug: o.slug,
+          industry: o.industry,
+          owner: o.owner,
+          owner_email: o.owner_email,
+          is_active: o.is_active,
+          entries_count: o.entries_count,
+          inserted_at: o.inserted_at,
+          registers_count: count(r.id)
+        }
+    )
+  end
+
   def list_active_organisations do
     Repo.all(from o in Organisation, where: o.is_active == true, order_by: [asc: o.name])
   end

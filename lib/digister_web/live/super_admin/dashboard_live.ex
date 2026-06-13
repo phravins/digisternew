@@ -13,7 +13,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
     total_orgs = Organisations.count_organisations()
     total_registers = Registers.count_registers()
     total_entries = Registers.count_entries()
-    orgs = Organisations.list_organisations()
+    orgs = Organisations.list_organisations_with_register_counts()
     activity = Activities.list_recent(10)
 
     {:ok,
@@ -26,6 +26,11 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
      |> assign(:total_entries, total_entries)
      |> assign(:orgs, orgs)
      |> assign(:activity, activity)}
+  end
+
+  def handle_event("clear_activity", _params, socket) do
+    Activities.clear_all()
+    {:noreply, assign(socket, :activity, [])}
   end
 
   defp fmt_date(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y")
@@ -110,7 +115,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               <p class="text-xs text-gray-400 font-medium mb-0.5">Recent</p>
               <h2 class="text-base font-semibold text-gray-900">Companies</h2>
             </div>
-            <a href="#" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+            <a href={~p"/super-admin/companies"} class="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
               View all
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -124,7 +129,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">S No</th>
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Company</th>
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Created</th>
-                  <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Admin</th>
+                  <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Registers</th>
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Entries</th>
                   <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
@@ -147,10 +152,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
                       <p class="text-sm text-gray-700">{fmt_date(org.inserted_at)}</p>
                       <p class="text-xs text-gray-400">{fmt_time(org.inserted_at)}</p>
                     </td>
-                    <td class="px-6 py-3">
-                      <p class="text-sm text-gray-700">{org.owner || "—"}</p>
-                      <p class="text-xs text-gray-400">{org.owner_email || "—"}</p>
-                    </td>
+                    <td class="px-6 py-3 text-sm text-gray-700">{org.registers_count}</td>
                     <td class="px-6 py-3 text-sm text-gray-700">{org.entries_count}</td>
                     <td class="px-6 py-3">
                       <span class={[
@@ -220,7 +222,10 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
           <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-sm font-semibold text-gray-900">Activity</h3>
             <div class="flex items-center gap-1.5">
-              <button class="text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded px-2.5 py-1 transition-colors">Clear</button>
+              <button phx-click="clear_activity" data-confirm="Clear all activity? This cannot be undone."
+                class="text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 hover:bg-red-50 rounded px-2.5 py-1 transition-colors">
+                Clear
+              </button>
               <span class="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded px-2.5 py-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                 Live

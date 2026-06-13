@@ -201,6 +201,12 @@ defmodule Digister.Accounts do
     |> Repo.update()
   end
 
+  def update_signed_on(user) do
+    user
+    |> Ecto.Changeset.change(signed_on: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second))
+    |> Repo.update()
+  end
+
   ## Session
 
   @doc """
