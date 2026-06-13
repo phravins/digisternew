@@ -138,21 +138,21 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
                   </tr>
                 <% else %>
                   <tr :for={{org, idx} <- Enum.with_index(@orgs, 1)} class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-gray-400">{idx}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-3 text-sm text-gray-400">{idx}</td>
+                    <td class="px-6 py-3">
                       <p class="font-medium text-gray-900 text-sm">{org.name}</p>
                       <p class="text-xs text-gray-400">{org.industry || "—"}</p>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-3">
                       <p class="text-sm text-gray-700">{fmt_date(org.inserted_at)}</p>
                       <p class="text-xs text-gray-400">{fmt_time(org.inserted_at)}</p>
                     </td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-3">
                       <p class="text-sm text-gray-700">{org.owner || "—"}</p>
                       <p class="text-xs text-gray-400">{org.owner_email || "—"}</p>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{org.entries_count}</td>
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-3 text-sm text-gray-700">{org.entries_count}</td>
+                    <td class="px-6 py-3">
                       <span class={[
                         "inline-flex items-center gap-1.5 text-xs font-medium",
                         if(org.is_active, do: "text-green-700", else: "text-gray-400")
@@ -200,8 +200,8 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </div>
             </div>
           </div>
-          <div class="px-6 py-6">
-            <div class="flex items-end gap-1.5 h-32">
+          <div class="px-6 py-4">
+            <div class="flex items-end gap-1.5 h-24">
               <div :for={h <- [20, 45, 30, 70, 55, 80, 40, 90, 60, 35, 65, 50, 75, 45, 55, 85, 40, 70, 30, 60, 50, 80, 65, 35, 55, 75, 45, 60, 70, 40]} class="flex-1 bg-indigo-100 rounded-t-sm" style={"height: #{h}%"}></div>
             </div>
             <div class="flex justify-between mt-2 text-xs text-gray-400">
@@ -227,7 +227,7 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               </span>
             </div>
           </div>
-          <div class="px-5 py-4 space-y-5 max-h-[520px] overflow-y-auto">
+          <div class="px-5 py-4 space-y-5 min-h-[420px] max-h-[520px] overflow-y-auto">
             <%= if @activity == [] do %>
               <p class="text-xs text-gray-400 text-center py-6">No activity yet.</p>
             <% else %>
@@ -255,26 +255,26 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
             <h3 class="text-sm font-semibold text-gray-900">Quick actions</h3>
           </div>
           <div class="p-5 grid grid-cols-2 gap-4">
-            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+            <button class="flex items-center gap-3 px-4 py-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full">
               <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               + New org
             </button>
-            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+            <button class="flex items-center gap-3 px-4 py-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full">
               <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Users
             </button>
-            <a href={~p"/super-admin/settings"} class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+            <a href={~p"/super-admin/settings"} class="flex items-center gap-3 px-4 py-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full">
               <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Settings
             </a>
-            <button class="flex flex-col items-center gap-2 px-4 py-5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+            <button class="flex items-center gap-3 px-4 py-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full">
               <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
