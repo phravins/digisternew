@@ -5,6 +5,13 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
 
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
+  @industries ["Agriculture", "Automotive", "Consulting & Advisory", "Education", "Energy",
+               "Finance & Banking", "Healthcare & Medical", "Hospitality & Tourism", "Legal",
+               "Manufacturing", "Media & Entertainment", "Real Estate", "Retail", "Technology"]
+
+  @countries ["India", "United States", "United Kingdom", "Canada", "Australia",
+              "Germany", "France", "Singapore", "UAE", "Other"]
+
   def mount(_params, _session, socket) do
     orgs = Organisations.list_organisations()
 
@@ -15,7 +22,12 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
      |> assign(:orgs, orgs)
      |> assign(:all_orgs, orgs)
      |> assign(:search, "")
-     |> assign(:filter, "all")}
+     |> assign(:filter, "all")
+     |> assign(:show_modal, false)
+     |> assign(:modal_step, 1)
+     |> assign(:industries, @industries)
+     |> assign(:countries, @countries)
+     |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
   end
 
   def handle_event("search", %{"q" => q}, socket) do
@@ -38,6 +50,63 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
         _ -> socket.assigns.all_orgs
       end
     {:noreply, socket |> assign(:filter, status) |> assign(:orgs, filtered)}
+  end
+
+  def handle_event("open_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_modal, true)
+     |> assign(:modal_step, 1)
+     |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
+  end
+
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, :show_modal, false)}
+  end
+
+  def handle_event("next_step", %{"name" => name, "slug" => slug, "industry" => industry, "country" => country}, socket) do
+    cond do
+      String.trim(name) == "" ->
+        {:noreply, put_flash(socket, :error, "Company name is required.")}
+      String.trim(slug) == "" ->
+        {:noreply, put_flash(socket, :error, "Link is required.")}
+      true ->
+        {:noreply,
+         socket
+         |> assign(:modal_step, 2)
+         |> assign(:form_data, %{"name" => name, "slug" => slug, "industry" => industry, "country" => country})}
+    end
+  end
+
+  def handle_event("create_company", %{"admin_first_name" => first, "admin_last_name" => last, "admin_email" => admin_email} = params, socket) do
+    data = socket.assigns.form_data
+    admin_name = String.trim("#{first} #{last}")
+    admin_phone = Map.get(params, "admin_phone", "")
+    cond do
+      String.trim(admin_email) == "" ->
+        {:noreply, put_flash(socket, :error, "Admin email is required.")}
+      true ->
+        case Organisations.create_organisation(%{
+          name: data["name"],
+          slug: data["slug"],
+          industry: data["industry"],
+          country: data["country"],
+          owner: admin_name,
+          owner_email: admin_email,
+          owner_phone: admin_phone
+        }) do
+          {:ok, _org} ->
+            orgs = Organisations.list_organisations()
+            {:noreply,
+             socket
+             |> assign(:orgs, orgs)
+             |> assign(:all_orgs, orgs)
+             |> assign(:show_modal, false)
+             |> put_flash(:info, "Company created successfully.")}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, "Failed to create company. Check the link is unique.")}
+        end
+    end
   end
 
   def handle_event("delete", %{"id" => id}, socket) do
@@ -96,8 +165,8 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
           </svg>
           Export
         </button>
-        <button type="button"
-          class="flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-sm font-medium text-white transition-colors">
+        <button type="button" phx-click="open_modal"
+          class="flex items-center gap-1.5 rounded-lg bg-gray-900 hover:bg-gray-700 px-4 py-2.5 text-sm font-medium text-white transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
           </svg>
@@ -172,6 +241,200 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
           </tbody>
         </table>
       </div>
+      <%!-- New Company Modal --%>
+      <div :if={@show_modal} class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" phx-click="close_modal"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+
+          <%!-- Modal header --%>
+          <div class="px-8 pt-8 pb-6 border-b border-gray-100">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-lg font-bold text-gray-900">
+                    {if @modal_step == 1, do: "Create Company", else: "Admin Account"}
+                  </h2>
+                  <p class="text-sm text-gray-400 mt-0.5">
+                    {if @modal_step == 1,
+                      do: "Set up the company workspace details.",
+                      else: "Who will manage this company workspace?"}
+                  </p>
+                </div>
+              </div>
+              <button type="button" phx-click="close_modal"
+                class="text-gray-400 hover:text-gray-600 transition-colors mt-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <%!-- Step progress bar --%>
+            <div class="flex items-center gap-2 mt-5">
+              <div class="flex-1 flex items-center gap-2">
+                <span class={["text-xs font-medium", if(@modal_step == 1, do: "text-gray-900", else: "text-gray-400")]}>
+                  Company details
+                </span>
+                <div class="flex-1 h-1 rounded-full bg-gray-100 overflow-hidden">
+                  <div class={["h-full rounded-full transition-all", if(@modal_step >= 1, do: "bg-gray-900 w-full", else: "w-0")]}></div>
+                </div>
+              </div>
+              <div class="flex-1 flex items-center gap-2">
+                <span class={["text-xs font-medium", if(@modal_step == 2, do: "text-gray-900", else: "text-gray-400")]}>
+                  Admin account
+                </span>
+                <div class="flex-1 h-1 rounded-full bg-gray-100 overflow-hidden">
+                  <div class={["h-full rounded-full transition-all", if(@modal_step >= 2, do: "bg-gray-900 w-full", else: "w-0")]}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Step 1 — Company Details --%>
+          <div :if={@modal_step == 1} class="px-8 py-7">
+            <form phx-submit="next_step" class="space-y-5">
+              <%!-- Company Name --%>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Company Name <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="name" value={@form_data["name"]}
+                  placeholder="Acme Inc."
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition" />
+              </div>
+
+              <%!-- Workspace Link --%>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Workspace Link <span class="text-red-500">*</span>
+                  <span class="ml-1.5 text-xs text-gray-400 font-normal">Used in workspace URL</span>
+                </label>
+                <div class="flex items-stretch rounded-xl border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 transition">
+                  <span class="px-3 py-3 bg-gray-50 text-xs text-gray-400 border-r border-gray-200 flex items-center whitespace-nowrap">
+                    digisters.in/
+                  </span>
+                  <input type="text" name="slug" value={@form_data["slug"]}
+                    placeholder="acme-inc"
+                    class="flex-1 px-3 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white" />
+                </div>
+              </div>
+
+              <%!-- Industry & Country --%>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Industry</label>
+                  <div class="relative">
+                    <select name="industry"
+                      class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-gray-900 transition pr-9">
+                      <option value="">Select industry</option>
+                      <option :for={ind <- @industries} value={ind} selected={@form_data["industry"] == ind}>{ind}</option>
+                    </select>
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Country</label>
+                  <div class="relative">
+                    <select name="country"
+                      class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-gray-900 transition pr-9">
+                      <option value="">Select country</option>
+                      <option :for={c <- @countries} value={c} selected={@form_data["country"] == c}>{c}</option>
+                    </select>
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Actions --%>
+              <div class="flex gap-3 pt-1">
+                <button type="button" phx-click="close_modal"
+                  class="flex-1 rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                  class="flex-1 rounded-xl bg-gray-900 hover:bg-gray-700 px-5 py-3 text-sm font-medium text-white transition-colors">
+                  Continue
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <%!-- Step 2 — Admin Account --%>
+          <div :if={@modal_step == 2} class="px-8 py-7">
+            <form phx-submit="create_company" class="space-y-5">
+              <%!-- First / Last Name --%>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
+                  <input type="text" name="admin_first_name" placeholder="First Name"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition" />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
+                  <input type="text" name="admin_last_name" placeholder="Last Name"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition" />
+                </div>
+              </div>
+
+              <%!-- Email --%>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email <span class="text-red-500">*</span>
+                </label>
+                <input type="email" name="admin_email" placeholder="admin@company.com"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition" />
+              </div>
+
+              <%!-- Phone (optional) --%>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phone Number
+                  <span class="ml-1.5 text-xs text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div class="flex items-stretch rounded-xl border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 transition">
+                  <div class="relative">
+                    <select class="h-full pl-3 pr-7 bg-gray-50 text-sm text-gray-600 border-r border-gray-200 appearance-none focus:outline-none cursor-pointer">
+                      <option>+91</option>
+                      <option>+1</option>
+                      <option>+44</option>
+                      <option>+61</option>
+                      <option>+971</option>
+                    </select>
+                    <svg class="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <input type="tel" name="admin_phone" placeholder="98765 43210"
+                    class="flex-1 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none bg-white" />
+                </div>
+              </div>
+
+              <%!-- Actions --%>
+              <div class="flex gap-3 pt-1">
+                <button type="button" phx-click="close_modal"
+                  class="flex-1 rounded-xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit"
+                  class="flex-1 rounded-xl bg-gray-900 hover:bg-gray-700 px-5 py-3 text-sm font-medium text-white transition-colors">
+                  Create Company
+                </button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
     </div>
     """
   end

@@ -1,11 +1,23 @@
 import Config
 
+# Load .env file for local development secrets
+if File.exists?(".env") do
+  File.read!(".env")
+  |> String.split("\n", trim: true)
+  |> Enum.reject(&String.starts_with?(&1, "#"))
+  |> Enum.filter(&String.contains?(&1, "="))
+  |> Enum.each(fn line ->
+    [key | rest] = String.split(line, "=", parts: 2)
+    System.put_env(String.trim(key), String.trim(Enum.join(rest, "=")))
+  end)
+end
+
 # Configure your database
 config :digister, Digister.Repo,
-  username: "postgres",
-  password: "Phravin@2005",
-  hostname: "localhost",
-  database: "digister_dev",
+  username: System.get_env("DB_USERNAME", "postgres"),
+  password: System.get_env("DB_PASSWORD") || raise("DB_PASSWORD is not set in .env"),
+  hostname: System.get_env("DB_HOSTNAME", "localhost"),
+  database: System.get_env("DB_NAME", "digister_dev"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -23,7 +35,7 @@ config :digister, DigisterWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "B0QWr682CeIQYTVsQOsvYGKePdKFeFddn8vosPHYCLKiDVejHvj6sTz2wCxJx8XL",
+  secret_key_base: System.get_env("SECRET_KEY_BASE") || raise("SECRET_KEY_BASE is not set in .env"),
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:digister, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:digister, ~w(--watch)]}

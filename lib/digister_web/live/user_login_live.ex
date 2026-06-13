@@ -2,12 +2,10 @@ defmodule DigisterWeb.UserLoginLive do
   use DigisterWeb, :live_view
 
   alias Digister.Accounts
+  alias Phoenix.LiveView.JS
 
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:page_title, "Sign in")
-     |> assign(:show_password, false)}
+    {:ok, assign(socket, :page_title, "Sign in")}
   end
 
   def render(assigns) do
@@ -37,19 +35,25 @@ defmodule DigisterWeb.UserLoginLive do
           <label class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
           <div class="relative">
             <input
-              type={if @show_password, do: "text", else: "password"}
+              id="login_password"
+              type="password"
               name="password"
               placeholder="Enter password"
               required
               class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition pr-10"
             />
-            <button type="button" phx-click="toggle_password"
+            <button type="button"
+              phx-click={
+                JS.toggle_attribute({"type", "password", "text"}, to: "#login_password")
+                |> JS.toggle(to: "#eye_open")
+                |> JS.toggle(to: "#eye_closed")
+              }
               class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <svg :if={!@show_password} class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <svg id="eye_open" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <svg :if={@show_password} class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <svg id="eye_closed" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
               </svg>
             </button>
@@ -99,7 +103,4 @@ defmodule DigisterWeb.UserLoginLive do
     end
   end
 
-  def handle_event("toggle_password", _params, socket) do
-    {:noreply, assign(socket, :show_password, !socket.assigns.show_password)}
-  end
 end

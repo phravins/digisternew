@@ -9,9 +9,9 @@ config :bcrypt_elixir, :log_rounds, 1
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :digister, Digister.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
+  username: System.get_env("DB_USERNAME", "postgres"),
+  password: System.get_env("DB_PASSWORD", "postgres"),
+  hostname: System.get_env("DB_HOSTNAME", "localhost"),
   database: "digister_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
@@ -20,7 +20,7 @@ config :digister, Digister.Repo,
 # you can enable the server option below.
 config :digister, DigisterWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "iQVo2XEx5Ho3c5zK5kcOK/Wc1fXv2P6qTtaTGgi2izJikOtN87rG4Ihp5DI5At5G",
+  secret_key_base: System.get_env("SECRET_KEY_BASE", "iQVo2XEx5Ho3c5zK5kcOK/Wc1fXv2P6qTtaTGgi2izJikOtN87rG4Ihp5DI5At5G"),
   server: false
 
 # In test we don't send emails
