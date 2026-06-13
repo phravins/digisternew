@@ -111,6 +111,10 @@ defmodule Digister.Registers do
     Repo.delete_all(from r in Register, where: not is_nil(r.deleted_at) and r.deleted_at < ^cutoff)
   end
 
+  def purge_all_bin do
+    Repo.delete_all(from r in Register, where: not is_nil(r.deleted_at))
+  end
+
   # Fields
 
   def list_fields(register_id) do

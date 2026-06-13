@@ -87,7 +87,7 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
     ~H"""
     <div class="flex items-center justify-between mb-5">
       <div>
-        <h1 class="text-xl font-bold text-gray-900">Templates</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Templates</h1>
         <p class="text-sm text-gray-500 mt-0.5">Reusable register structures — apply to any company</p>
       </div>
       <a href={~p"/digisters/superadmin/registers/new"}

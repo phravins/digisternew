@@ -384,7 +384,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </a>
-          <h1 class="text-xl font-bold text-gray-900">Create Register</h1>
+          <h1 class="text-2xl font-bold text-gray-900">Create Register</h1>
         </div>
         <div class="flex items-center gap-2">
           <button type="submit" name="is_template" value="true"

@@ -3,13 +3,21 @@
 
 alias Digister.Accounts
 
-super_admin_email = "admin@realoffice.in"
+# Credentials are read from environment variables (loaded from .env in dev)
+# so they are never hardcoded in source files.
+super_admin_email =
+  System.get_env("SUPER_ADMIN_EMAIL") ||
+    raise "SUPER_ADMIN_EMAIL is not set (add it to .env)"
+
+super_admin_password =
+  System.get_env("SUPER_ADMIN_PASSWORD") ||
+    raise "SUPER_ADMIN_PASSWORD is not set (add it to .env)"
 
 case Accounts.get_user_by_email(super_admin_email) do
   nil ->
     case Accounts.register_super_admin(%{
       email: super_admin_email,
-      password: "Admin@2026"
+      password: super_admin_password
     }) do
       {:ok, user} ->
         IO.puts("Super admin created: #{user.email}")

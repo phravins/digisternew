@@ -245,7 +245,11 @@ defmodule DigisterWeb.SuperAdmin.ProfileLive do
             <div>
               <label class="block text-sm text-gray-600 mb-1.5">Company</label>
               <div class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 bg-gray-50">
-                {if @organisation, do: @organisation.name, else: "—"}
+                {cond do
+                  @organisation -> @organisation.name
+                  @user.role == "super_admin" -> "Realoffice"
+                  true -> "—"
+                end}
               </div>
             </div>
           </div>

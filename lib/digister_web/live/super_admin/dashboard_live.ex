@@ -86,6 +86,22 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
     end)
   end
 
+  # Y-axis tick values from top down to 0, scaled to the data's max.
+  defp y_axis_ticks(max_val) do
+    top = max(max_val, 1)
+
+    if top <= 5 do
+      Enum.to_list(top..0//-1)
+    else
+      step = div(top + 3, 4)
+      nice_top = step * 4
+      Enum.map(0..4, fn i -> nice_top - i * step end)
+    end
+  end
+
+  defp bar_height(0, _y_top), do: "0%"
+  defp bar_height(value, y_top), do: "#{max(4, round(value * 100 / y_top))}%"
+
   defp fmt_date(%NaiveDateTime{} = dt) do
     ist = NaiveDateTime.add(dt, 19800, :second)
     Calendar.strftime(ist, "%d %b %Y")
@@ -261,24 +277,33 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
           </div>
           <div class="px-6 py-5">
             <% max_val = Enum.reduce(@chart_data, 1, fn d, acc -> max(acc, max(d.active, d.companies)) end) %>
-            <div class="flex items-end gap-0.5 h-48">
-              <%= for day_data <- @chart_data do %>
-                <div class="flex-1 flex items-end gap-px min-w-0">
-                  <div class="flex-1 rounded-t-sm"
-                    style={"background-color:#4ade80; height:#{if day_data.active > 0, do: max(4, round(day_data.active * 100 / max_val)), else: 0}%"}
-                    title={"Day #{day_data.day}: #{day_data.active} active users"}></div>
-                  <div class="flex-1 rounded-t-sm"
-                    style={"background-color:#f87171; height:#{if day_data.companies > 0, do: max(4, round(day_data.companies * 100 / max_val)), else: 0}%"}
-                    title={"Day #{day_data.day}: #{day_data.companies} companies"}></div>
+            <% ticks = y_axis_ticks(max_val) %>
+            <% y_top = List.first(ticks) %>
+            <div class="flex">
+              <%!-- Y axis (counts of users / companies) --%>
+              <div class="flex flex-col justify-between h-48 pr-2 text-right text-[10px] text-gray-400 leading-none">
+                <span :for={t <- ticks}>{t}</span>
+              </div>
+              <%!-- Chart area --%>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-end gap-0.5 h-48 border-l border-b border-gray-200">
+                  <%= for day_data <- @chart_data do %>
+                    <div class="flex-1 flex items-end justify-center gap-px min-w-0 h-full">
+                      <div class="flex-1 rounded-t-sm"
+                        style={"background-color:#4ade80; height:#{bar_height(day_data.active, y_top)}"}
+                        title={"Day #{day_data.day}: #{day_data.active} active users"}></div>
+                      <div class="flex-1 rounded-t-sm"
+                        style={"background-color:#f87171; height:#{bar_height(day_data.companies, y_top)}"}
+                        title={"Day #{day_data.day}: #{day_data.companies} companies"}></div>
+                    </div>
+                  <% end %>
                 </div>
-              <% end %>
-            </div>
-            <div class="flex justify-between mt-2 text-xs text-gray-400">
-              <span>1</span>
-              <span>{div(length(@chart_data), 4) + 1}</span>
-              <span>{div(length(@chart_data), 2) + 1}</span>
-              <span>{div(length(@chart_data) * 3, 4) + 1}</span>
-              <span>{length(@chart_data)}</span>
+                <%!-- X axis: every day of the month --%>
+                <div class="flex gap-0.5 mt-1.5">
+                  <div :for={day_data <- @chart_data}
+                    class="flex-1 text-center text-[9px] text-gray-400 min-w-0">{day_data.day}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
