@@ -10,7 +10,7 @@ defmodule DigisterWeb.SuperAdmin.ExportController do
   def companies(conn, _params) do
     orgs = Organisations.list_organisations()
 
-    header = ["S.No", "Name", "Slug", "Industry", "Country", "Owner", "Owner Email", "Status", "Created"]
+    header = ["S.No", "Company", "Industry", "Created", "Status"]
 
     data =
       Enum.with_index(orgs, 1)
@@ -18,13 +18,9 @@ defmodule DigisterWeb.SuperAdmin.ExportController do
         [
           idx,
           org.name,
-          org.slug,
           org.industry || "",
-          org.country || "",
-          org.owner || "",
-          org.owner_email || "",
-          if(org.is_active, do: "Active", else: "Inactive"),
-          fmt_date(org.inserted_at)
+          fmt_date(org.inserted_at),
+          if(org.is_active, do: "Active", else: "Inactive")
         ]
       end)
 

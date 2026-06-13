@@ -88,8 +88,8 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
       </div>
 
       <%!-- Table --%>
-      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table class="w-full text-sm">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+        <table class="w-full text-sm min-w-[800px]">
           <thead>
             <tr class="border-b border-gray-100">
               <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider w-12">S.No</th>
