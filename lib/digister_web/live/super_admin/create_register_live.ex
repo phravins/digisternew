@@ -370,13 +370,22 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
           </a>
           <h1 class="text-xl font-bold text-gray-900">Create Register</h1>
         </div>
-        <button type="submit"
-          class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg>
-          Save
-        </button>
+        <div class="flex items-center gap-2">
+          <button type="submit" name="is_template" value="true"
+            class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+            Save as Template
+          </button>
+          <button type="submit"
+            class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Save
+          </button>
+        </div>
       </div>
 
       <%!-- Basic Information --%>
@@ -400,27 +409,16 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
           </div>
         </div>
-        <div class="mt-3 flex items-start gap-8">
-          <%= if @orgs != [] do %>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
-              <select name="organisation_id"
-                class="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition max-w-xs">
-                <option value="">Select company (optional)</option>
-                <option :for={org <- @orgs} value={org.id}>{org.name}</option>
-              </select>
-            </div>
-          <% end %>
-          <div class="flex flex-col justify-end pb-0.5">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Save as Template</label>
-            <label class="flex items-center gap-2.5 cursor-pointer">
-              <input type="checkbox" name="is_template" value="true"
-                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span class="text-sm text-gray-600">Mark as reusable template</span>
-              <span class="text-xs text-gray-400">(no company required)</span>
-            </label>
+        <%= if @orgs != [] do %>
+          <div class="mt-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
+            <select name="organisation_id"
+              class="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition max-w-xs">
+              <option value="">Select company (optional)</option>
+              <option :for={org <- @orgs} value={org.id}>{org.name}</option>
+            </select>
           </div>
-        </div>
+        <% end %>
       </div>
 
       <%!-- Fields builder: left panel + right panel --%>

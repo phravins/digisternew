@@ -37,6 +37,18 @@ defmodule Digister.Organisations do
     Repo.aggregate(Organisation, :count, :id)
   end
 
+  def daily_new_companies(year, month) do
+    Repo.all(
+      from o in Organisation,
+        where: fragment("DATE_PART('year', ? + interval '330 minutes') = ?", o.inserted_at, ^year),
+        where: fragment("DATE_PART('month', ? + interval '330 minutes') = ?", o.inserted_at, ^month),
+        group_by: fragment("DATE_PART('day', ? + interval '330 minutes')", o.inserted_at),
+        select: {fragment("DATE_PART('day', ? + interval '330 minutes')::integer", o.inserted_at), count(o.id)},
+        order_by: fragment("DATE_PART('day', ? + interval '330 minutes')", o.inserted_at)
+    )
+    |> Map.new()
+  end
+
   def get_organisation!(id), do: Repo.get!(Organisation, id)
 
   def get_organisation_by_slug(slug), do: Repo.get_by(Organisation, slug: slug)

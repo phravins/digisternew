@@ -8,6 +8,12 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
 
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
+  @months [
+    {1, "January"}, {2, "February"}, {3, "March"}, {4, "April"},
+    {5, "May"}, {6, "June"}, {7, "July"}, {8, "August"},
+    {9, "September"}, {10, "October"}, {11, "November"}, {12, "December"}
+  ]
+
   def mount(_params, _session, socket) do
     if connected?(socket), do: Phoenix.PubSub.subscribe(Digister.PubSub, "activities")
 
@@ -18,6 +24,11 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
     orgs = Organisations.list_organisations_with_register_counts()
     activity = Activities.list_recent(20)
 
+    now_ist = NaiveDateTime.utc_now() |> NaiveDateTime.add(19800, :second)
+    chart_year = now_ist.year
+    chart_month = now_ist.month
+    chart_data = build_chart_data(chart_year, chart_month)
+
     {:ok,
      socket
      |> assign(:page_title, "Dashboard")
@@ -27,21 +38,52 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
      |> assign(:total_registers, total_registers)
      |> assign(:total_entries, total_entries)
      |> assign(:orgs, orgs)
-     |> assign(:activity, activity)}
+     |> assign(:activity, activity)
+     |> assign(:chart_year, chart_year)
+     |> assign(:chart_month, chart_month)
+     |> assign(:chart_data, chart_data)
+     |> assign(:months, @months)}
   end
 
   def handle_info({:activity_logged, activity}, socket) do
     updated = [activity | socket.assigns.activity] |> Enum.take(20)
-    {:noreply, assign(socket, :activity, updated)}
+    socket = assign(socket, :activity, updated)
+
+    now_ist = NaiveDateTime.utc_now() |> NaiveDateTime.add(19800, :second)
+    socket =
+      if socket.assigns.chart_year == now_ist.year and socket.assigns.chart_month == now_ist.month do
+        assign(socket, :chart_data, build_chart_data(socket.assigns.chart_year, socket.assigns.chart_month))
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   def handle_info(:activities_cleared, socket) do
     {:noreply, assign(socket, :activity, [])}
   end
 
+  def handle_event("change_chart_period", params, socket) do
+    year = String.to_integer(params["year"] || to_string(socket.assigns.chart_year))
+    month = String.to_integer(params["month"] || to_string(socket.assigns.chart_month))
+    chart_data = build_chart_data(year, month)
+    {:noreply, socket |> assign(:chart_year, year) |> assign(:chart_month, month) |> assign(:chart_data, chart_data)}
+  end
+
   def handle_event("clear_activity", _params, socket) do
     Activities.clear_all()
     {:noreply, assign(socket, :activity, [])}
+  end
+
+  defp build_chart_data(year, month) do
+    active_map = Accounts.daily_active_users(year, month)
+    companies_map = Organisations.daily_new_companies(year, month)
+    num_days = Date.days_in_month(Date.new!(year, month, 1))
+
+    Enum.map(1..num_days, fn d ->
+      %{day: d, active: Map.get(active_map, d, 0), companies: Map.get(companies_map, d, 0)}
+    end)
   end
 
   defp fmt_date(%NaiveDateTime{} = dt) do
@@ -197,33 +239,46 @@ defmodule DigisterWeb.SuperAdmin.DashboardLive do
               <p class="text-xs text-gray-400 mt-0.5">Daily logins and new companies</p>
             </div>
             <div class="flex items-center gap-2">
-              <select class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                <option>January</option><option>February</option><option>March</option>
-                <option>April</option><option>May</option><option selected>June</option>
-                <option>July</option><option>August</option><option>September</option>
-                <option>October</option><option>November</option><option>December</option>
-              </select>
-              <select class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                <option selected>2026</option><option>2025</option>
-              </select>
+              <form phx-change="change_chart_period" class="flex items-center gap-2">
+                <select name="month" class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                  <option :for={{num, name} <- @months} value={num} selected={num == @chart_month}>{name}</option>
+                </select>
+                <select name="year" class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                  <option :for={y <- [2026, 2025, 2024]} value={y} selected={y == @chart_year}>{y}</option>
+                </select>
+              </form>
               <div class="flex items-center gap-3 ml-2">
                 <span class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span>
                   Active Users
                 </span>
                 <span class="flex items-center gap-1.5 text-xs text-gray-500">
-                  <span class="w-2.5 h-2.5 rounded-full bg-blue-200 inline-block"></span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>
                   New Companies
                 </span>
               </div>
             </div>
           </div>
           <div class="px-6 py-5">
-            <div class="flex items-end gap-1.5 h-48">
-              <div :for={h <- [20, 45, 30, 70, 55, 80, 40, 90, 60, 35, 65, 50, 75, 45, 55, 85, 40, 70, 30, 60, 50, 80, 65, 35, 55, 75, 45, 60, 70, 40]} class="flex-1 bg-indigo-100 rounded-t-sm" style={"height: #{h}%"}></div>
+            <% max_val = Enum.reduce(@chart_data, 1, fn d, acc -> max(acc, max(d.active, d.companies)) end) %>
+            <div class="flex items-end gap-0.5 h-48">
+              <%= for day_data <- @chart_data do %>
+                <div class="flex-1 flex items-end gap-px min-w-0">
+                  <div class="flex-1 bg-green-400 rounded-t-sm"
+                    style={"height: #{max(1, round(day_data.active * 100 / max_val))}%"}
+                    title={"Day #{day_data.day}: #{day_data.active} active users"}></div>
+                  <div class="flex-1 bg-red-400 rounded-t-sm"
+                    style={"height: #{max(1, round(day_data.companies * 100 / max_val))}%"}
+                    title={"Day #{day_data.day}: #{day_data.companies} new companies"}></div>
+                </div>
+              <% end %>
             </div>
             <div class="flex justify-between mt-2 text-xs text-gray-400">
-              <span>1</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span>
+              <span>1</span>
+              <span>{div(length(@chart_data), 4) + 1}</span>
+              <span>{div(length(@chart_data), 2) + 1}</span>
+              <span>{div(length(@chart_data) * 3, 4) + 1}</span>
+              <span>{length(@chart_data)}</span>
             </div>
           </div>
         </div>

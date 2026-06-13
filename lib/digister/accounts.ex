@@ -88,6 +88,19 @@ defmodule Digister.Accounts do
 
   def count_users, do: Repo.aggregate(User, :count)
 
+  def daily_active_users(year, month) do
+    Repo.all(
+      from u in User,
+        where: not is_nil(u.signed_on),
+        where: fragment("DATE_PART('year', ? + interval '330 minutes') = ?", u.signed_on, ^year),
+        where: fragment("DATE_PART('month', ? + interval '330 minutes') = ?", u.signed_on, ^month),
+        group_by: fragment("DATE_PART('day', ? + interval '330 minutes')", u.signed_on),
+        select: {fragment("DATE_PART('day', ? + interval '330 minutes')::integer", u.signed_on), count(u.id)},
+        order_by: fragment("DATE_PART('day', ? + interval '330 minutes')", u.signed_on)
+    )
+    |> Map.new()
+  end
+
   def list_users, do: Repo.all(User)
 
   def list_users_with_orgs do
