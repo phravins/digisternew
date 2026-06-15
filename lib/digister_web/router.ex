@@ -122,6 +122,6 @@ defmodule DigisterWeb.Router do
     live "/", DashboardLive, :index
     live "/registers", RegistersLive, :index
     live "/team", TeamLive, :index
-    live "/settings", SettingsLive, :index
+    live "/profile", ProfileLive, :index
   end
 end

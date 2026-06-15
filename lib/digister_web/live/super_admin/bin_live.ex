@@ -13,7 +13,9 @@ defmodule DigisterWeb.SuperAdmin.BinLive do
      |> assign(:page_title, "Bin")
      |> assign(:active_nav, :bin)
      |> assign(:registers, registers)
-     |> assign(:show_clear_modal, false)}
+     |> assign(:show_clear_modal, false)
+     |> assign(:recover_register, nil)
+     |> assign(:purge_register, nil)}
   end
 
   def handle_event("confirm_clear", _params, socket) do
@@ -34,23 +36,41 @@ defmodule DigisterWeb.SuperAdmin.BinLive do
      |> put_flash(:info, "Bin cleared — #{count} #{if count == 1, do: "register", else: "registers"} permanently deleted.")}
   end
 
-  def handle_event("recover", %{"id" => id}, socket) do
-    register = Registers.get_register!(id)
+  # Recover (with confirmation)
+  def handle_event("confirm_recover", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :recover_register, Registers.get_register!(id))}
+  end
+
+  def handle_event("cancel_recover", _params, socket) do
+    {:noreply, assign(socket, :recover_register, nil)}
+  end
+
+  def handle_event("do_recover", _params, socket) do
+    register = socket.assigns.recover_register
     Registers.recover_register(register)
-    registers = Registers.list_bin()
     {:noreply,
      socket
-     |> assign(:registers, registers)
+     |> assign(:recover_register, nil)
+     |> assign(:registers, Registers.list_bin())
      |> put_flash(:info, "\"#{register.name}\" has been recovered successfully.")}
   end
 
-  def handle_event("purge", %{"id" => id}, socket) do
-    register = Registers.get_register!(id)
+  # Permanent delete (with confirmation)
+  def handle_event("confirm_purge", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :purge_register, Registers.get_register!(id))}
+  end
+
+  def handle_event("cancel_purge", _params, socket) do
+    {:noreply, assign(socket, :purge_register, nil)}
+  end
+
+  def handle_event("do_purge", _params, socket) do
+    register = socket.assigns.purge_register
     Registers.purge_register(register)
-    registers = Registers.list_bin()
     {:noreply,
      socket
-     |> assign(:registers, registers)
+     |> assign(:purge_register, nil)
+     |> assign(:registers, Registers.list_bin())
      |> put_flash(:info, "\"#{register.name}\" permanently deleted.")}
   end
 
@@ -149,11 +169,11 @@ defmodule DigisterWeb.SuperAdmin.BinLive do
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center gap-2 justify-end">
-                  <button type="button" phx-click="recover" phx-value-id={r.id}
+                  <button type="button" phx-click="confirm_recover" phx-value-id={r.id}
                     class="text-xs px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg font-medium hover:bg-green-100 transition-colors whitespace-nowrap">
                     Recover
                   </button>
-                  <button type="button" phx-click="purge" phx-value-id={r.id}
+                  <button type="button" phx-click="confirm_purge" phx-value-id={r.id}
                     class="text-xs px-3 py-1.5 border border-gray-200 text-gray-400 rounded-lg hover:text-red-500 hover:border-red-200 transition-colors whitespace-nowrap">
                     Delete Now
                   </button>
@@ -181,6 +201,48 @@ defmodule DigisterWeb.SuperAdmin.BinLive do
           <button type="button" phx-click="clear_bin"
             class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">
             Clear Bin
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Recover Confirm Modal --%>
+    <div :if={@recover_register} class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/20" phx-click="cancel_recover"></div>
+      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+        <h3 class="text-base font-semibold text-gray-900 mb-1">Restore register?</h3>
+        <p class="text-sm text-gray-500 mb-5">
+          "{@recover_register.name}" will be restored and removed from the Bin.
+        </p>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" phx-click="cancel_recover"
+            class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button type="button" phx-click="do_recover"
+            class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-sm font-medium text-white transition-colors">
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Permanent Delete Confirm Modal --%>
+    <div :if={@purge_register} class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/20" phx-click="cancel_purge"></div>
+      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete permanently?</h3>
+        <p class="text-sm text-gray-500 mb-5">
+          "{@purge_register.name}" will be permanently deleted. This cannot be undone.
+        </p>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" phx-click="cancel_purge"
+            class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button type="button" phx-click="do_purge"
+            class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium text-white transition-colors">
+            Delete
           </button>
         </div>
       </div>
