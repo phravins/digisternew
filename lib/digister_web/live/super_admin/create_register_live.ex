@@ -15,6 +15,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
       |> assign(:active_nav, :new_register)
       |> assign(:orgs, orgs)
       |> assign(:errors, %{})
+      |> assign(:field_errors, %{})
 
     socket =
       case socket.assigns.live_action do
@@ -102,7 +103,13 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
     fields = Enum.map(socket.assigns.fields, fn f ->
       if f.id == id, do: %{f | label: val}, else: f
     end)
-    {:noreply, assign(socket, :fields, fields)}
+
+    field_errors =
+      if String.trim(val) == "",
+        do: socket.assigns.field_errors,
+        else: Map.delete(socket.assigns.field_errors, id)
+
+    {:noreply, socket |> assign(:fields, fields) |> assign(:field_errors, field_errors)}
   end
 
   def handle_event("reorder_fields", %{"order" => order}, socket) do
@@ -188,105 +195,134 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
 
   def handle_event("save", params, socket) do
     name = String.trim(params["name"] || "")
-    desc = params["description"] || ""
-    org_id = params["organisation_id"] || ""
+    desc_raw = params["description"] || ""
+    desc = if String.trim(desc_raw) == "", do: nil, else: String.trim(desc_raw)
+    org_id = String.trim(params["organisation_id"] || "")
     is_template = params["is_template"] == "true"
+    fields = socket.assigns.fields
+
+    # Each field must have a non-empty label.
+    field_errors =
+      fields
+      |> Enum.filter(fn f -> String.trim(params["label_#{f.id}"] || "") == "" end)
+      |> Map.new(fn f -> {f.id, "Field label is required."} end)
 
     errors =
       %{}
       |> then(fn e -> if name == "", do: Map.put(e, :name, "Register name is required."), else: e end)
 
-    if errors == %{} do
-      attrs = %{
-        name: name,
-        description: if(String.trim(desc) == "", do: nil, else: String.trim(desc)),
-        organisation_id: if(is_template || String.trim(org_id) == "", do: nil, else: org_id),
-        is_template: is_template
-      }
+    cond do
+      errors != %{} or field_errors != %{} ->
+        {:noreply, socket |> assign(:errors, errors) |> assign(:field_errors, field_errors)}
 
-      editing = socket.assigns.register
+      # New register, no company chosen → create it for every company.
+      is_nil(socket.assigns.register) and not is_template and org_id == "" and socket.assigns.orgs != [] ->
+        Enum.each(socket.assigns.orgs, fn org ->
+          case Registers.create_register(%{name: name, description: desc, organisation_id: org.id, is_template: false}) do
+            {:ok, register} -> persist_fields(register.id, fields, params)
+            _ -> :ok
+          end
+        end)
 
-      result =
-        if editing do
-          Registers.update_register(editing, attrs)
-        else
-          Registers.create_register(attrs)
+        count = length(socket.assigns.orgs)
+        log_activity(socket, "created register \"#{name}\" for all companies")
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Register \"#{name}\" created for all #{count} companies.")
+         |> push_navigate(to: ~p"/digisters/superadmin/registers")}
+
+      true ->
+        editing = socket.assigns.register
+        org_attr = if is_template or org_id == "", do: nil, else: org_id
+        attrs = %{name: name, description: desc, organisation_id: org_attr, is_template: is_template}
+
+        result =
+          if editing,
+            do: Registers.update_register(editing, attrs),
+            else: Registers.create_register(attrs)
+
+        case result do
+          {:ok, register} ->
+            if editing, do: Registers.delete_fields(register.id)
+            persist_fields(register.id, fields, params)
+
+            action =
+              cond do
+                editing && is_template -> "updated template \"#{name}\""
+                editing -> "updated register \"#{name}\""
+                is_template -> "created template \"#{name}\""
+                true -> "created register \"#{name}\""
+              end
+
+            log_activity(socket, action)
+
+            redirect_to =
+              cond do
+                is_template -> ~p"/digisters/superadmin/templates"
+                register.organisation_id -> ~p"/digisters/superadmin/registers/#{register.organisation_id}"
+                true -> ~p"/digisters/superadmin/registers"
+              end
+
+            msg =
+              cond do
+                editing && is_template -> "Template \"#{name}\" updated successfully."
+                editing -> "Register \"#{name}\" updated successfully."
+                is_template -> "Template \"#{name}\" saved successfully."
+                true -> "Register \"#{name}\" created successfully."
+              end
+
+            {:noreply,
+             socket
+             |> put_flash(:info, msg)
+             |> push_navigate(to: redirect_to)}
+
+          {:error, changeset} ->
+            {:noreply, assign(socket, :errors, changeset_errors(changeset))}
+        end
+    end
+  end
+
+  # Creates all fields for a register from the current builder state + form params.
+  defp persist_fields(register_id, fields, params) do
+    fields
+    |> Enum.with_index()
+    |> Enum.each(fn {field, index} ->
+      label = String.trim(params["label_#{field.id}"] || "")
+      effective_label = if label == "", do: type_label(field.type), else: label
+
+      options =
+        case field.type do
+          t when t in ["dropdown", "multi_select", "checkbox"] ->
+            Enum.reject(field.config.options, &(String.trim(&1) == ""))
+          "currency" -> [field.config[:currency] || "INR"]
+          "phone" -> [field.config[:dial_code] || "+91"]
+          "file" -> field.config[:allowed] || []
+          _ -> nil
         end
 
-      case result do
-        {:ok, register} ->
-          if editing, do: Registers.delete_fields(register.id)
+      Registers.create_field(%{
+        register_id: register_id,
+        label: effective_label,
+        field_key: slugify(effective_label) <> "_#{field.id}",
+        field_type: field.type,
+        required: field.required,
+        position: index,
+        options: options
+      })
+    end)
+  end
 
-          socket.assigns.fields
-          |> Enum.with_index()
-          |> Enum.each(fn {field, index} ->
-            label = String.trim(params["label_#{field.id}"] || "")
-            effective_label = if label == "", do: type_label(field.type), else: label
+  defp log_activity(socket, action) do
+    user = socket.assigns.current_scope.user
+    actor = user.username || String.split(user.email, "@") |> List.first()
+    Activities.log(%{user_name: actor, action: action})
+  end
 
-            options = case field.type do
-              t when t in ["dropdown", "multi_select", "checkbox"] ->
-                Enum.reject(field.config.options, &(String.trim(&1) == ""))
-              "currency" -> [field.config[:currency] || "INR"]
-              "phone" -> [field.config[:dial_code] || "+91"]
-              "file" -> field.config[:allowed] || []
-              _ -> nil
-            end
-
-            Registers.create_field(%{
-              register_id: register.id,
-              label: effective_label,
-              field_key: slugify(effective_label) <> "_#{field.id}",
-              field_type: field.type,
-              required: field.required,
-              position: index,
-              options: options
-            })
-          end)
-
-          user = socket.assigns.current_scope.user
-          actor = user.username || String.split(user.email, "@") |> List.first()
-
-          action =
-            cond do
-              editing && is_template -> "updated template \"#{name}\""
-              editing -> "updated register \"#{name}\""
-              is_template -> "created template \"#{name}\""
-              true -> "created register \"#{name}\""
-            end
-
-          Activities.log(%{user_name: actor, action: action})
-
-          redirect_to =
-            cond do
-              is_template -> ~p"/digisters/superadmin/templates"
-              register.organisation_id -> ~p"/digisters/superadmin/registers/#{register.organisation_id}"
-              true -> ~p"/digisters/superadmin/registers"
-            end
-
-          msg =
-            cond do
-              editing && is_template -> "Template \"#{name}\" updated successfully."
-              editing -> "Register \"#{name}\" updated successfully."
-              is_template -> "Template \"#{name}\" saved successfully."
-              true -> "Register \"#{name}\" created successfully."
-            end
-
-          {:noreply,
-           socket
-           |> put_flash(:info, msg)
-           |> push_navigate(to: redirect_to)}
-
-        {:error, changeset} ->
-          db_errors =
-            Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-            |> Enum.map(fn {k, [v | _]} -> {k, v} end)
-            |> Map.new()
-
-          {:noreply, assign(socket, :errors, db_errors)}
-      end
-    else
-      {:noreply, assign(socket, :errors, errors)}
-    end
+  defp changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+    |> Enum.map(fn {k, [v | _]} -> {k, v} end)
+    |> Map.new()
   end
 
   defp slugify(label) do
@@ -565,9 +601,14 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
                     {type_label(field.type)}
                   </span>
                   <input type="text" name={"label_#{field.id}"} value={field.label}
-                    placeholder="Field label"
+                    placeholder={if @field_errors[field.id], do: "Field label is required", else: "Field label"}
                     phx-blur="update_label" phx-value-id={field.id}
-                    class="flex-1 text-sm text-gray-900 bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-gray-400 min-w-0" />
+                    class={[
+                      "flex-1 text-sm bg-transparent focus:outline-none min-w-0 rounded",
+                      if(@field_errors[field.id],
+                        do: "text-gray-900 border border-red-400 px-2 py-1 focus:ring-1 focus:ring-red-300 placeholder-red-400",
+                        else: "text-gray-900 border-0 focus:ring-0 placeholder-gray-400")
+                    ]} />
                   <button type="button"
                     phx-click="remove_field" phx-value-id={field.id}
                     class="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 p-0.5">
@@ -576,6 +617,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
                     </svg>
                   </button>
                 </div>
+                <p :if={@field_errors[field.id]} class="px-4 pb-2 -mt-1 text-xs text-red-500">{@field_errors[field.id]}</p>
 
                 <%!-- Field type-specific config --%>
 

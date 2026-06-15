@@ -6,6 +6,56 @@ defmodule DigisterWeb.SuperAdmin.ExportController do
 
   alias Digister.Organisations
   alias Digister.Accounts
+  alias Digister.Registers
+
+  def register(conn, %{"register_id" => register_id}) do
+    register = Registers.get_register!(register_id)
+    fields = Registers.list_fields(register_id)
+    entries = Registers.list_entries(register_id)
+
+    file_index =
+      Registers.list_file_uploads(register_id)
+      |> Map.new(fn u -> {{u.entry_id, u.field_key}, u.original_name} end)
+
+    header = ["S.No"] ++ Enum.map(fields, & &1.label) ++ ["Added by"]
+
+    data =
+      Enum.with_index(entries, 1)
+      |> Enum.map(fn {entry, idx} ->
+        cells =
+          Enum.map(fields, fn field ->
+            export_cell(entry, field, file_index)
+          end)
+
+        [idx] ++ cells ++ [entry.added_by_name || ""]
+      end)
+
+    filename = "#{slugify(register.name)}_#{Date.utc_today()}.csv"
+    send_csv(conn, to_csv([header | data]), filename)
+  end
+
+  defp export_cell(entry, field, file_index) do
+    cond do
+      field.field_type == "file" ->
+        Map.get(file_index, {entry.id, field.field_key}) || ""
+
+      true ->
+        case Map.get(entry.data || %{}, field.field_key) do
+          nil -> ""
+          v when is_list(v) -> Enum.join(v, ", ")
+          v -> to_string(v)
+        end
+    end
+  end
+
+  defp slugify(name) do
+    name
+    |> to_string()
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/, "_")
+    |> String.trim("_")
+    |> then(fn s -> if s == "", do: "register", else: s end)
+  end
 
   def companies(conn, _params) do
     orgs = Organisations.list_organisations()

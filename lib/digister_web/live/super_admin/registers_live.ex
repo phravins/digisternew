@@ -334,30 +334,49 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
 
         <%!-- Register header card --%>
         <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 mb-6">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h2 class="text-lg font-bold text-gray-900">{@register.name}</h2>
+                  <span class={[
+                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                    if(@register.is_active,
+                      do: "bg-green-50 border-green-200 text-green-700",
+                      else: "bg-gray-50 border-gray-200 text-gray-500")
+                  ]}>
+                    {if @register.is_active, do: "Published", else: "Draft"}
+                  </span>
+                </div>
+                <p class="text-sm text-gray-400 mt-0.5">{@register.description || "No description"}</p>
+                <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <span>{length(@fields)} {if length(@fields) == 1, do: "field", else: "fields"}</span>
+                  <span>{length(@all_entries)} {if length(@all_entries) == 1, do: "entry", else: "entries"}</span>
+                  <span>Updated {fmt_date(@register.updated_at)}</span>
+                </div>
+              </div>
             </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <h2 class="text-lg font-bold text-gray-900">{@register.name}</h2>
-                <span class={[
-                  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                  if(@register.is_active,
-                    do: "bg-green-50 border-green-200 text-green-700",
-                    else: "bg-gray-50 border-gray-200 text-gray-500")
-                ]}>
-                  {if @register.is_active, do: "Published", else: "Draft"}
-                </span>
-              </div>
-              <p class="text-sm text-gray-400 mt-0.5">{@register.description || "No description"}</p>
-              <div class="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                <span>{length(@fields)} {if length(@fields) == 1, do: "field", else: "fields"}</span>
-                <span>{length(@all_entries)} {if length(@all_entries) == 1, do: "entry", else: "entries"}</span>
-                <span>Updated {fmt_date(@register.updated_at)}</span>
-              </div>
+            <%!-- Edit + Export actions --%>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <a href={~p"/digisters/superadmin/registers/#{@register.id}/edit"}
+                class="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </a>
+              <a href={~p"/digisters/superadmin/registers/#{@register.id}/export"}
+                class="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export
+              </a>
             </div>
           </div>
         </div>

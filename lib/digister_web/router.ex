@@ -99,5 +99,6 @@ defmodule DigisterWeb.Router do
 
     get "/companies/export", ExportController, :companies
     get "/users/export", ExportController, :users
+    get "/registers/:register_id/export", ExportController, :register
   end
 end
