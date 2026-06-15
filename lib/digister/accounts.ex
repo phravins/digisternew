@@ -6,7 +6,7 @@ defmodule Digister.Accounts do
   import Ecto.Query, warn: false
   alias Digister.Repo
 
-  alias Digister.Accounts.{User, UserToken, UserNotifier}
+  alias Digister.Accounts.{User, UserToken, UserNotifier, UserOrganisation}
 
   ## Database getters
 
@@ -84,6 +84,43 @@ defmodule Digister.Accounts do
     %User{}
     |> User.super_admin_changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Creates a non-super-admin account with access to one or more companies, each with
+  its own role. `memberships` is a list of `%{organisation_id: id, role: role}`.
+
+  The user's primary `organisation_id`/`role` are set from the first membership so the
+  existing user list/edit views keep working, and a `UserOrganisation` row is inserted
+  for every membership.
+  """
+  def create_account(attrs, memberships) do
+    [primary | _] = memberships
+
+    user_attrs =
+      attrs
+      |> Map.put(:organisation_id, primary.organisation_id)
+      |> Map.put(:role, primary.role)
+
+    Repo.transaction(fn ->
+      case %User{} |> User.account_changeset(user_attrs) |> Repo.insert() do
+        {:ok, user} ->
+          Enum.each(memberships, fn m ->
+            %UserOrganisation{}
+            |> UserOrganisation.changeset(%{
+              user_id: user.id,
+              organisation_id: m.organisation_id,
+              role: m.role
+            })
+            |> Repo.insert!()
+          end)
+
+          user
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   def count_users, do: Repo.aggregate(User, :count)

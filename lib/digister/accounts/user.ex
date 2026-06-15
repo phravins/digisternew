@@ -24,7 +24,21 @@ defmodule Digister.Accounts.User do
     field :organisation_id, :binary_id
     field :deleted_at, :naive_datetime
 
+    has_many :user_organisations, Digister.Accounts.UserOrganisation
+
     timestamps(type: :utc_datetime)
+  end
+
+  def account_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:username, :email, :password, :role, :organisation_id])
+    |> validate_length(:username, max: 100)
+    |> validate_inclusion(:role, ["super_admin", "admin", "member"])
+    |> validate_email([])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 8, max: 72)
+    |> maybe_hash_password([])
+    |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
 
   def admin_changeset(user, attrs) do
