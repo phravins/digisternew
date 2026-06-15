@@ -197,7 +197,7 @@ defmodule DigisterWeb.UserAuth do
   end
 
   defp signed_in_path(%Digister.Accounts.User{role: "super_admin"}), do: ~p"/digisters/superadmin"
-  defp signed_in_path(_user), do: ~p"/"
+  defp signed_in_path(_user), do: ~p"/select-company"
 
   @doc """
   Plug for routes that require the user to be authenticated.

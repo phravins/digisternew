@@ -161,6 +161,50 @@ defmodule Digister.Accounts do
     )
   end
 
+  @doc """
+  Lists the organisations a user belongs to (via the user_organisations join table),
+  with their per-company role. Only active organisations are returned.
+  """
+  def list_user_organisations(user_id) do
+    Repo.all(
+      from uo in UserOrganisation,
+        join: o in Digister.Organisations.Organisation,
+        on: o.id == uo.organisation_id,
+        where: uo.user_id == ^user_id and o.is_active == true,
+        order_by: [asc: o.name],
+        select: %{organisation: o, role: uo.role}
+    )
+  end
+
+  @doc """
+  Returns the `%UserOrganisation{}` membership for a user + organisation, or nil.
+  """
+  def get_user_organisation(user_id, organisation_id) do
+    Repo.get_by(UserOrganisation, user_id: user_id, organisation_id: organisation_id)
+  end
+
+  @doc """
+  Lists the users that belong to an organisation (via the join table), with their
+  per-company role. Used by the admin Team page.
+  """
+  def list_users_by_organisation(organisation_id) do
+    Repo.all(
+      from uo in UserOrganisation,
+        join: u in User,
+        on: u.id == uo.user_id,
+        where: uo.organisation_id == ^organisation_id and is_nil(u.deleted_at),
+        order_by: [asc: u.username],
+        select: %{
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          role: uo.role,
+          is_active: u.is_active,
+          signed_on: u.signed_on
+        }
+    )
+  end
+
   ## Settings
 
   @doc """

@@ -22,6 +22,11 @@ defmodule DigisterWeb.Router do
     plug :put_layout, false
   end
 
+  pipeline :admin_layout do
+    plug :put_root_layout, html: {DigisterWeb.Layouts, :admin}
+    plug :put_layout, false
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -100,5 +105,23 @@ defmodule DigisterWeb.Router do
     get "/companies/export", ExportController, :companies
     get "/users/export", ExportController, :users
     get "/registers/:register_id/export", ExportController, :register
+  end
+
+  ## Company-selection page (after login, for admin/member users)
+  scope "/", DigisterWeb.Admin do
+    pipe_through [:browser, :auth_layout]
+
+    live "/select-company", SelectCompanyLive, :index
+  end
+
+  ## Company-scoped admin area (defined AFTER the super-admin scope so that
+  ## /digisters/superadmin keeps matching the super-admin routes).
+  scope "/digisters/:company_slug", DigisterWeb.Admin do
+    pipe_through [:browser, :admin_layout]
+
+    live "/", DashboardLive, :index
+    live "/registers", RegistersLive, :index
+    live "/team", TeamLive, :index
+    live "/settings", SettingsLive, :index
   end
 end

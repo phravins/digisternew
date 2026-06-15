@@ -15,6 +15,16 @@ defmodule Digister.Registers do
     Repo.aggregate(from(r in Register, where: is_nil(r.deleted_at) and r.is_template == false), :count, :id)
   end
 
+  def count_registers(organisation_id) do
+    Repo.aggregate(
+      from(r in Register,
+        where: r.organisation_id == ^organisation_id and is_nil(r.deleted_at) and r.is_template == false
+      ),
+      :count,
+      :id
+    )
+  end
+
   def get_register!(id), do: Repo.get!(Register, id)
 
   def create_register(attrs) do
@@ -147,6 +157,31 @@ defmodule Digister.Registers do
 
   def count_entries do
     Repo.aggregate(from(e in RegisterEntry, where: is_nil(e.deleted_at)), :count, :id)
+  end
+
+  def count_entries(organisation_id) do
+    Repo.aggregate(
+      from(e in RegisterEntry, where: e.organisation_id == ^organisation_id and is_nil(e.deleted_at)),
+      :count,
+      :id
+    )
+  end
+
+  def list_recent_entries(organisation_id, limit \\ 10) do
+    Repo.all(
+      from e in RegisterEntry,
+        join: r in Register,
+        on: r.id == e.register_id,
+        where: e.organisation_id == ^organisation_id and is_nil(e.deleted_at),
+        order_by: [desc: e.inserted_at],
+        limit: ^limit,
+        select: %{
+          id: e.id,
+          register_name: r.name,
+          added_by_name: e.added_by_name,
+          inserted_at: e.inserted_at
+        }
+    )
   end
 
   def create_entry(attrs) do
