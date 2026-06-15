@@ -7,20 +7,57 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
 
   on_mount {DigisterWeb.SuperAdminAuth, :require_super_admin}
 
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     orgs = Organisations.list_organisations()
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Create Register")
-     |> assign(:active_nav, :new_register)
-     |> assign(:orgs, orgs)
-     |> assign(:fields, [])
-     |> assign(:errors, %{})
-     |> assign(:name, "")
-     |> assign(:description, "")
-     |> assign(:organisation_id, "")
-     |> assign(:next_id, 0)}
+    socket =
+      socket
+      |> assign(:active_nav, :new_register)
+      |> assign(:orgs, orgs)
+      |> assign(:errors, %{})
+
+    socket =
+      case socket.assigns.live_action do
+        :edit ->
+          register = Registers.get_register!(params["register_id"])
+          fields = Registers.list_fields(register.id)
+          built = Enum.with_index(fields) |> Enum.map(fn {f, i} -> build_field(f, i) end)
+
+          socket
+          |> assign(:page_title, "Edit Register")
+          |> assign(:register, register)
+          |> assign(:name, register.name || "")
+          |> assign(:description, register.description || "")
+          |> assign(:organisation_id, to_string(register.organisation_id || ""))
+          |> assign(:fields, built)
+          |> assign(:next_id, length(built))
+
+        _ ->
+          socket
+          |> assign(:page_title, "Create Register")
+          |> assign(:register, nil)
+          |> assign(:name, "")
+          |> assign(:description, "")
+          |> assign(:organisation_id, "")
+          |> assign(:fields, [])
+          |> assign(:next_id, 0)
+      end
+
+    {:ok, socket}
+  end
+
+  # Rebuilds the in-form field map (with atom-keyed config) from a stored RegisterField.
+  defp build_field(field, index) do
+    config =
+      case field.field_type do
+        t when t in ["dropdown", "multi_select", "checkbox"] -> %{options: field.options || []}
+        "currency" -> %{currency: List.first(field.options || []) || "INR"}
+        "phone" -> %{dial_code: List.first(field.options || []) || "+91"}
+        "file" -> %{allowed: field.options || []}
+        _ -> %{}
+      end
+
+    %{id: index, label: field.label, type: field.field_type, required: field.required, config: config}
   end
 
   def handle_event("form_change", params, socket) do
@@ -167,8 +204,19 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
         is_template: is_template
       }
 
-      case Registers.create_register(attrs) do
+      editing = socket.assigns.register
+
+      result =
+        if editing do
+          Registers.update_register(editing, attrs)
+        else
+          Registers.create_register(attrs)
+        end
+
+      case result do
         {:ok, register} ->
+          if editing, do: Registers.delete_fields(register.id)
+
           socket.assigns.fields
           |> Enum.with_index()
           |> Enum.each(fn {field, index} ->
@@ -197,16 +245,31 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
 
           user = socket.assigns.current_scope.user
           actor = user.username || String.split(user.email, "@") |> List.first()
-          action = if is_template, do: "created template \"#{name}\"", else: "created register \"#{name}\""
+
+          action =
+            cond do
+              editing && is_template -> "updated template \"#{name}\""
+              editing -> "updated register \"#{name}\""
+              is_template -> "created template \"#{name}\""
+              true -> "created register \"#{name}\""
+            end
+
           Activities.log(%{user_name: actor, action: action})
 
-          redirect_to = if is_template,
-            do: ~p"/digisters/superadmin/templates",
-            else: ~p"/digisters/superadmin/registers"
+          redirect_to =
+            cond do
+              is_template -> ~p"/digisters/superadmin/templates"
+              register.organisation_id -> ~p"/digisters/superadmin/registers/#{register.organisation_id}"
+              true -> ~p"/digisters/superadmin/registers"
+            end
 
-          msg = if is_template,
-            do: "Template \"#{name}\" saved successfully.",
-            else: "Register \"#{name}\" created successfully."
+          msg =
+            cond do
+              editing && is_template -> "Template \"#{name}\" updated successfully."
+              editing -> "Register \"#{name}\" updated successfully."
+              is_template -> "Template \"#{name}\" saved successfully."
+              true -> "Register \"#{name}\" created successfully."
+            end
 
           {:noreply,
            socket
@@ -395,7 +458,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </a>
-          <h1 class="text-2xl font-bold text-gray-900">Create Register</h1>
+          <h1 class="text-2xl font-bold text-gray-900">{if @register, do: "Edit Register", else: "Create Register"}</h1>
         </div>
         <div class="flex items-center gap-2">
           <button type="submit" name="is_template" value="true"

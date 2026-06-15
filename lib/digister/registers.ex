@@ -131,6 +131,10 @@ defmodule Digister.Registers do
     |> Repo.insert()
   end
 
+  def delete_fields(register_id) do
+    Repo.delete_all(from f in RegisterField, where: f.register_id == ^register_id)
+  end
+
   # Entries
 
   def list_entries(register_id) do

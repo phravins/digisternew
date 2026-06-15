@@ -19,6 +19,7 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
      |> assign(:orgs, orgs)
      |> assign(:applying, nil)
      |> assign(:apply_org_id, "")
+     |> assign(:deleting_template, nil)
      |> assign(:search, "")}
   end
 
@@ -66,15 +67,24 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
     end
   end
 
-  def handle_event("delete_template", %{"id" => id}, socket) do
-    register = Registers.get_register!(id)
+  def handle_event("confirm_delete_template", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :deleting_template, Registers.get_register!(id))}
+  end
+
+  def handle_event("cancel_delete_template", _params, socket) do
+    {:noreply, assign(socket, :deleting_template, nil)}
+  end
+
+  def handle_event("do_delete_template", _params, socket) do
+    register = socket.assigns.deleting_template
     Registers.soft_delete_register(register)
     templates = Registers.list_templates()
     {:noreply,
      socket
+     |> assign(:deleting_template, nil)
      |> assign(:all_templates, templates)
      |> assign(:templates, templates)
-     |> put_flash(:info, "Template moved to Bin.")}
+     |> put_flash(:info, "Template \"#{register.name}\" moved to Bin.")}
   end
 
   defp fmt_date(%NaiveDateTime{} = dt) do
@@ -182,7 +192,7 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
                       class="text-xs px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-lg font-medium hover:bg-indigo-100 transition-colors whitespace-nowrap">
                       Apply to Company
                     </button>
-                    <button type="button" phx-click="delete_template" phx-value-id={t.id}
+                    <button type="button" phx-click="confirm_delete_template" phx-value-id={t.id}
                       class="text-xs px-3 py-1.5 border border-gray-200 text-gray-400 rounded-lg hover:text-red-500 hover:border-red-200 transition-colors">
                       Delete
                     </button>
@@ -193,6 +203,27 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
           </tbody>
         </table>
       <% end %>
+    </div>
+
+    <%!-- Delete template confirmation modal --%>
+    <div :if={@deleting_template} class="fixed inset-0 z-50 flex items-center justify-center">
+      <div class="absolute inset-0 bg-black/20" phx-click="cancel_delete_template"></div>
+      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+        <h3 class="text-base font-semibold text-gray-900 mb-1">Delete template?</h3>
+        <p class="text-sm text-gray-500 mb-5">
+          "{@deleting_template.name}" will be moved to the Bin. You can restore it later from there.
+        </p>
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" phx-click="cancel_delete_template"
+            class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button type="button" phx-click="do_delete_template"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+            Delete
+          </button>
+        </div>
+      </div>
     </div>
     """
   end

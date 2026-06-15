@@ -24,6 +24,7 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
      |> assign(:all_entries, [])
      |> assign(:entries, [])
      |> assign(:file_index, %{})
+     |> assign(:deleting_register, nil)
      |> assign(:search, "")}
   end
 
@@ -111,6 +112,27 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
 
         {:noreply, socket |> assign(:search, q) |> assign(:entries, filtered)}
     end
+  end
+
+  def handle_event("confirm_delete_register", %{"id" => id}, socket) do
+    {:noreply, assign(socket, :deleting_register, Registers.get_register!(id))}
+  end
+
+  def handle_event("cancel_delete_register", _params, socket) do
+    {:noreply, assign(socket, :deleting_register, nil)}
+  end
+
+  def handle_event("do_delete_register", _params, socket) do
+    register = socket.assigns.deleting_register
+    Registers.soft_delete_register(register)
+    registers = Registers.list_registers(socket.assigns.selected_org.id)
+
+    {:noreply,
+     socket
+     |> assign(:deleting_register, nil)
+     |> assign(:all_registers, registers)
+     |> assign(:registers, registers)
+     |> put_flash(:info, "Register \"#{register.name}\" moved to Bin.")}
   end
 
   defp fmt_date(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%d %b %Y")
@@ -266,26 +288,35 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
           </div>
         <% else %>
           <div class="space-y-3">
-            <a :for={reg <- @registers}
-              href={~p"/digisters/superadmin/registers/#{@selected_org.id}/r/#{reg.id}"}
+            <div :for={reg <- @registers}
               class="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-5 py-4 hover:border-gray-300 hover:shadow-sm transition-all">
-              <%!-- Name + entries --%>
-              <div class="min-w-0">
+              <%!-- Name + entries (clickable) --%>
+              <a href={~p"/digisters/superadmin/registers/#{@selected_org.id}/r/#{reg.id}"}
+                class="min-w-0 flex-1">
                 <p class="font-semibold text-gray-900 text-sm truncate">{reg.name}</p>
                 <p class="text-xs text-gray-400 mt-0.5">
                   {reg.entries_count} {if reg.entries_count == 1, do: "entry", else: "entries"} · {fmt_date(reg.inserted_at)}
                 </p>
+              </a>
+              <%!-- Actions --%>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <a href={~p"/digisters/superadmin/registers/#{reg.id}/edit"}
+                  title="Edit register"
+                  class="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </a>
+                <button type="button"
+                  phx-click="confirm_delete_register" phx-value-id={reg.id}
+                  title="Delete register"
+                  class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
-              <%!-- Status --%>
-              <span class={[
-                "inline-flex flex-shrink-0 items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                if(reg.is_active,
-                  do: "bg-green-50 border-green-200 text-green-700",
-                  else: "bg-gray-50 border-gray-200 text-gray-500")
-              ]}>
-                {if reg.is_active, do: "Active", else: "Inactive"}
-              </span>
-            </a>
+            </div>
           </div>
         <% end %>
 
@@ -381,6 +412,27 @@ defmodule DigisterWeb.SuperAdmin.RegistersLive do
           </table>
         </div>
       <% end %>
+
+      <%!-- Delete register confirmation modal --%>
+      <div :if={@deleting_register} class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/20" phx-click="cancel_delete_register"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-sm mx-4 p-6">
+          <h3 class="text-base font-semibold text-gray-900 mb-1">Delete register?</h3>
+          <p class="text-sm text-gray-500 mb-5">
+            "{@deleting_register.name}" will be moved to the Bin. You can restore it later from there.
+          </p>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" phx-click="cancel_delete_register"
+              class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button type="button" phx-click="do_delete_register"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end
