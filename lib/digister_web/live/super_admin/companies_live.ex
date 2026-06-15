@@ -34,6 +34,10 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
      |> assign(:form_data, %{"name" => "", "slug" => "", "industry" => "", "country" => ""})}
   end
 
+  defp empty_filter_message("active"), do: "No active companies"
+  defp empty_filter_message("inactive"), do: "No inactive companies"
+  defp empty_filter_message(_), do: "No companies match your search"
+
   defp apply_filters(all_orgs, search, filter) do
     q = String.downcase(String.trim(search || ""))
 
@@ -242,8 +246,8 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
             value={@search}
             class="w-full border border-gray-200 rounded-lg pl-9 pr-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white" />
         </div>
-        <div class="relative">
-          <select phx-change="filter" name="status"
+        <form phx-change="filter" class="relative">
+          <select name="status"
             class="border border-gray-200 rounded-lg pl-3 pr-8 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 appearance-none cursor-pointer">
             <option value="all" selected={@filter == "all"}>All &nbsp;{length(@all_orgs)}</option>
             <option value="active" selected={@filter == "active"}>Active</option>
@@ -252,7 +256,7 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
           <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
-        </div>
+        </form>
         <a href="/digisters/superadmin/companies/export"
           class="flex items-center gap-1.5 border border-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -290,17 +294,23 @@ defmodule DigisterWeb.SuperAdmin.CompaniesLive do
                     <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
-                    <div>
-                      <p class="text-sm font-medium text-gray-700">No companies found</p>
-                      <p class="text-xs text-gray-400 mt-0.5">Get started by adding your first company.</p>
-                    </div>
-                    <button type="button" phx-click="open_modal"
-                      class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add Company
-                    </button>
+                    <%= if @all_orgs == [] do %>
+                      <div>
+                        <p class="text-sm font-medium text-gray-700">No companies found</p>
+                        <p class="text-xs text-gray-400 mt-0.5">Get started by adding your first company.</p>
+                      </div>
+                      <button type="button" phx-click="open_modal"
+                        class="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Company
+                      </button>
+                    <% else %>
+                      <div>
+                        <p class="text-sm font-medium text-gray-700">{empty_filter_message(@filter)}</p>
+                      </div>
+                    <% end %>
                   </div>
                 </td>
               </tr>

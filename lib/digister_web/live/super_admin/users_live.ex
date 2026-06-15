@@ -340,20 +340,34 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-                <select name="role"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
-                  <option value="super_admin" selected={@form_data["role"] == "super_admin"}>Super Admin</option>
-                  <option value="admin" selected={@form_data["role"] == "admin"}>Admin</option>
-                  <option value="member" selected={@form_data["role"] == "member"}>User</option>
-                </select>
+                <%= if @edit_user.role == "super_admin" do %>
+                  <input type="hidden" name="role" value="super_admin" />
+                  <div class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed">
+                    Super Admin
+                  </div>
+                <% else %>
+                  <select name="role"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <option value="super_admin" selected={@form_data["role"] == "super_admin"}>Super Admin</option>
+                    <option value="admin" selected={@form_data["role"] == "admin"}>Admin</option>
+                    <option value="member" selected={@form_data["role"] == "member"}>User</option>
+                  </select>
+                <% end %>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
-                <select name="organisation_id"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
-                  <option value="">No company</option>
-                  <option :for={org <- @orgs} value={org.id} selected={@form_data["organisation_id"] == org.id}>{org.name}</option>
-                </select>
+                <%= if @edit_user.role == "super_admin" do %>
+                  <input type="hidden" name="organisation_id" value={@form_data["organisation_id"]} />
+                  <div class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed">
+                    Realoffice
+                  </div>
+                <% else %>
+                  <select name="organisation_id"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <option value="">No company</option>
+                    <option :for={org <- @orgs} value={org.id} selected={@form_data["organisation_id"] == org.id}>{org.name}</option>
+                  </select>
+                <% end %>
               </div>
             </div>
 
