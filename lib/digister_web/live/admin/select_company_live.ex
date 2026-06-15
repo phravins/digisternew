@@ -36,7 +36,7 @@ defmodule DigisterWeb.Admin.SelectCompanyLive do
           </div>
         <% else %>
           <div class="space-y-3">
-            <a :for={c <- @companies} href={~p"/digisters/#{c.organisation.slug}"}
+            <a :for={c <- @companies} href={~p"/digisters/#{c.organisation.slug}/admin"}
               class="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-5 py-4 hover:border-indigo-300 hover:shadow-sm transition-all group">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold flex-shrink-0">

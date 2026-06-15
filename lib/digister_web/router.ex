@@ -116,7 +116,7 @@ defmodule DigisterWeb.Router do
 
   ## Company-scoped admin area (defined AFTER the super-admin scope so that
   ## /digisters/superadmin keeps matching the super-admin routes).
-  scope "/digisters/:company_slug", DigisterWeb.Admin do
+  scope "/digisters/:company_slug/admin", DigisterWeb.Admin do
     pipe_through [:browser, :admin_layout]
 
     live "/", DashboardLive, :index

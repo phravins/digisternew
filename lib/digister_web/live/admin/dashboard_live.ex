@@ -57,7 +57,7 @@ defmodule DigisterWeb.Admin.DashboardLive do
             <p class="text-xs text-gray-400 font-medium">Recent activity</p>
             <h2 class="text-base font-semibold text-gray-900">Latest entries</h2>
           </div>
-          <a href={~p"/digisters/#{@current_organisation.slug}/registers"} class="text-sm font-medium text-indigo-600 hover:underline">All registers</a>
+          <a href={~p"/digisters/#{@current_organisation.slug}/admin/registers"} class="text-sm font-medium text-indigo-600 hover:underline">All registers</a>
         </div>
         <%= if @recent_entries == [] do %>
           <div class="px-6 py-16 text-center">
