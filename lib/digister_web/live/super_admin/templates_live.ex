@@ -158,14 +158,15 @@ defmodule DigisterWeb.SuperAdmin.TemplatesLive do
                 <%= if @applying == t.id do %>
                   <%!-- Inline apply panel --%>
                   <div class="flex items-center gap-2 justify-end flex-wrap">
-                    <select
-                      class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      phx-change="select_org"
-                      name="org_id">
-                      <option value="">Select company...</option>
-                      <option :for={org <- @orgs} value={org.id}
-                        selected={@apply_org_id == org.id}>{org.name}</option>
-                    </select>
+                    <form phx-change="select_org" class="contents">
+                      <select
+                        class="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        name="org_id">
+                        <option value="">Select company...</option>
+                        <option :for={org <- @orgs} value={org.id}
+                          selected={@apply_org_id == org.id}>{org.name}</option>
+                      </select>
+                    </form>
                     <button type="button" phx-click="confirm_apply"
                       class="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
                       Apply

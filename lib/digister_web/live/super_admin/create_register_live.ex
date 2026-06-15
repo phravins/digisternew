@@ -17,7 +17,18 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
      |> assign(:orgs, orgs)
      |> assign(:fields, [])
      |> assign(:errors, %{})
+     |> assign(:name, "")
+     |> assign(:description, "")
+     |> assign(:organisation_id, "")
      |> assign(:next_id, 0)}
+  end
+
+  def handle_event("form_change", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:name, params["name"] || socket.assigns.name)
+     |> assign(:description, params["description"] || socket.assigns.description)
+     |> assign(:organisation_id, params["organisation_id"] || socket.assigns.organisation_id)}
   end
 
   def handle_event("add_field", %{"type" => type}, socket) do
@@ -373,7 +384,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
     assigns = assign(assigns, :all_types, @all_types)
 
     ~H"""
-    <form phx-submit="save" class="flex-1 flex flex-col min-h-0 w-full">
+    <form phx-submit="save" phx-change="form_change" class="flex-1 flex flex-col min-h-0 w-full">
 
       <%!-- Header --%>
       <div class="flex items-center justify-between mb-4">
@@ -410,7 +421,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Name</label>
-            <input type="text" name="name"
+            <input type="text" name="name" value={@name}
               placeholder="Register name"
               class={[
                 "w-full border rounded-lg px-3.5 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition",
@@ -420,7 +431,7 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-            <input type="text" name="description"
+            <input type="text" name="description" value={@description}
               placeholder="Brief description"
               class="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
           </div>
@@ -431,7 +442,8 @@ defmodule DigisterWeb.SuperAdmin.CreateRegisterLive do
             <select name="organisation_id"
               class="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition max-w-xs">
               <option value="">Select company (optional)</option>
-              <option :for={org <- @orgs} value={org.id}>{org.name}</option>
+              <option :for={org <- @orgs} value={org.id}
+                selected={@organisation_id == to_string(org.id)}>{org.name}</option>
             </select>
           </div>
         <% end %>
