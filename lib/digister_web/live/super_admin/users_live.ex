@@ -191,10 +191,13 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
     {:noreply, socket |> assign(:edit_user, nil) |> assign(:form_errors, %{})}
   end
 
-  def handle_event("update_user", %{"username" => username, "role" => role, "organisation_id" => org_id}, socket) do
+  def handle_event("update_user", %{"username" => username, "role" => role, "organisation_id" => org_id} = params, socket) do
+    password = params["password"] || ""
+
     errors =
       %{}
       |> then(fn e -> if String.trim(username) == "", do: Map.put(e, :username, "Name is required."), else: e end)
+      |> then(fn e -> if password != "" and String.length(password) < 8, do: Map.put(e, :password, "Password must be at least 8 characters."), else: e end)
 
     if errors == %{} do
       attrs = %{
@@ -203,14 +206,16 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
         organisation_id: if(String.trim(org_id) == "", do: nil, else: org_id)
       }
 
-      case Accounts.admin_update_user(socket.assigns.edit_user, attrs) do
-        {:ok, _user} ->
-          {:noreply,
-           socket
-           |> assign(:edit_user, nil)
-           |> refresh_users()
-           |> put_flash(:info, "User updated successfully.")}
+      user = socket.assigns.edit_user
 
+      with {:ok, _user} <- Accounts.admin_update_user(user, attrs),
+           {:ok, _user} <- maybe_update_password(user, password) do
+        {:noreply,
+         socket
+         |> assign(:edit_user, nil)
+         |> refresh_users()
+         |> put_flash(:info, "User updated successfully.")}
+      else
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Failed to update user.")}
       end
@@ -237,6 +242,9 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
      |> refresh_users()
      |> put_flash(:info, "User removed.")}
   end
+
+  defp maybe_update_password(_user, ""), do: {:ok, :unchanged}
+  defp maybe_update_password(user, password), do: Accounts.admin_update_user_password(user, password)
 
   defp company_select_label(selected) when map_size(selected) == 0, do: "Select companies..."
   defp company_select_label(selected) when map_size(selected) == 1, do: "1 company selected"
@@ -572,22 +580,6 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-                <%= if @edit_user.role == "super_admin" do %>
-                  <input type="hidden" name="role" value="super_admin" />
-                  <div class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed">
-                    Super Admin
-                  </div>
-                <% else %>
-                  <select name="role"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
-                    <option value="super_admin" selected={@form_data["role"] == "super_admin"}>Super Admin</option>
-                    <option value="admin" selected={@form_data["role"] == "admin"}>Admin</option>
-                    <option value="member" selected={@form_data["role"] == "member"}>User</option>
-                  </select>
-                <% end %>
-              </div>
-              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">Company</label>
                 <%= if @edit_user.role == "super_admin" do %>
                   <input type="hidden" name="organisation_id" value={@form_data["organisation_id"]} />
@@ -602,6 +594,32 @@ defmodule DigisterWeb.SuperAdmin.UsersLive do
                   </select>
                 <% end %>
               </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
+                <%= if @edit_user.role == "super_admin" do %>
+                  <input type="hidden" name="role" value="super_admin" />
+                  <div class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-500 bg-gray-100 cursor-not-allowed">
+                    Super Admin
+                  </div>
+                <% else %>
+                  <select name="role"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    <option value="admin" selected={@form_data["role"] == "admin"}>Admin</option>
+                    <option value="member" selected={@form_data["role"] == "member"}>User</option>
+                  </select>
+                <% end %>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+              <input type="password" name="password"
+                placeholder="Leave blank to keep current"
+                class={[
+                  "w-full border rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent",
+                  if(@form_errors[:password], do: "border-red-400 focus:ring-red-300", else: "border-gray-300 focus:ring-gray-400")
+                ]} />
+              <p :if={@form_errors[:password]} class="mt-1.5 text-xs text-red-500">{@form_errors[:password]}</p>
             </div>
 
             <div class="flex gap-3 pt-2">

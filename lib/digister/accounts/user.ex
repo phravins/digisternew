@@ -59,6 +59,14 @@ defmodule Digister.Accounts.User do
     |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
 
+  def admin_password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 8, max: 72)
+    |> maybe_hash_password([])
+  end
+
   def profile_changeset(user, attrs) do
     user
     |> cast(attrs, [:username, :avatar, :avatar_content_type])

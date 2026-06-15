@@ -260,6 +260,12 @@ defmodule Digister.Accounts do
     |> Repo.update()
   end
 
+  def admin_update_user_password(user, password) do
+    user
+    |> User.admin_password_changeset(%{password: password})
+    |> Repo.update()
+  end
+
   def set_user_active(%User{} = user, active?) when is_boolean(active?) do
     user
     |> Ecto.Changeset.change(is_active: active?)
